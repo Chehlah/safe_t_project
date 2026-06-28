@@ -1,0 +1,2071 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Safe T Care Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" referrerpolicy="no-referrer">
+  <style>
+    :root {
+      --bg: #f5f7f4;
+      --panel: #ffffff;
+      --ink: #17211c;
+      --muted: #65726c;
+      --line: #dbe3de;
+      --green: #187a4d;
+      --green-soft: #e6f5ed;
+      --amber: #b26300;
+      --amber-soft: #fff2d8;
+      --red: #c02d2d;
+      --red-soft: #ffe5e5;
+      --gray: #626a66;
+      --gray-soft: #eef1ef;
+      --blue: #235f8f;
+      --blue-soft: #e5f2fb;
+      --shadow: 0 16px 40px rgba(24, 43, 34, 0.08);
+      color-scheme: light;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background:
+        linear-gradient(180deg, rgba(229, 242, 235, 0.82), rgba(245, 247, 244, 0) 360px),
+        var(--bg);
+      color: var(--ink);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(245, 247, 244, 0.88);
+      border-bottom: 1px solid rgba(219, 227, 222, 0.9);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar-inner {
+      display: grid;
+      grid-template-columns: minmax(190px, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 16px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background: #173d31;
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.1rem, 2vw, 1.45rem);
+      line-height: 1.15;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .nav button,
+    .segmented button {
+      min-height: 36px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+
+    .nav button.active,
+    .segmented button.active {
+      background: #173d31;
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(23, 61, 49, 0.16);
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 44px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    .page-head > div {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--green);
+      font-weight: 700;
+      font-size: 0.86rem;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(1.45rem, 3vw, 2.25rem);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.25;
+    }
+
+    .subtext {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      min-height: 86px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.87rem;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 7px;
+      font-size: 1.65rem;
+      line-height: 1;
+    }
+
+    .layout-two {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .band,
+    .card,
+    .table-wrap,
+    .settings-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+    }
+
+    .band {
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .map {
+      position: relative;
+      min-height: 310px;
+      overflow: hidden;
+      border: 1px solid #cbd8d1;
+      border-radius: 8px;
+      background:
+        linear-gradient(90deg, rgba(35, 95, 143, 0.08) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(35, 95, 143, 0.08) 1px, transparent 1px),
+        linear-gradient(135deg, transparent 0 48%, rgba(55, 118, 83, 0.18) 48% 53%, transparent 53%),
+        linear-gradient(30deg, transparent 0 44%, rgba(178, 99, 0, 0.16) 44% 49%, transparent 49%),
+        #edf4ee;
+      background-size: 34px 34px, 34px 34px, 100% 100%, 100% 100%, auto;
+    }
+
+    .leaflet-map {
+      min-height: 360px;
+      background: #eaf2ec;
+    }
+
+    .leaflet-map::before,
+    .leaflet-map::after {
+      display: none;
+    }
+
+    .map-empty {
+      display: grid;
+      place-items: center;
+      min-height: inherit;
+      padding: 22px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .map-empty strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .leaflet-popup-content {
+      margin: 10px 12px;
+      line-height: 1.45;
+    }
+
+    .leaflet-control-attribution {
+      font-size: 0.72rem;
+    }
+
+    .map-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0 0;
+    }
+
+    .map-note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.9rem;
+    }
+
+    .location-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .location-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfb;
+      padding: 14px;
+    }
+
+    .location-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .location-card h4 {
+      margin: 0;
+      font-size: 0.98rem;
+    }
+
+    .location-card p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    #detail-map-meta .location-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+    }
+
+    .mini-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      border-top: 1px solid var(--line);
+      padding-top: 7px;
+    }
+
+    .mini-list dt {
+      color: var(--muted);
+    }
+
+    .mini-list dd {
+      margin: 0;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .map::before,
+    .map::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      background: rgba(35, 95, 143, 0.13);
+    }
+
+    .map::before {
+      width: 250px;
+      height: 92px;
+      left: -44px;
+      bottom: 18px;
+      transform: rotate(-16deg);
+    }
+
+    .map::after {
+      width: 210px;
+      height: 70px;
+      right: -28px;
+      top: 38px;
+      transform: rotate(19deg);
+    }
+
+    .marker {
+      position: absolute;
+      display: grid;
+      gap: 7px;
+      width: 166px;
+      transform: translate(-50%, -100%);
+      z-index: 2;
+    }
+
+    .pin {
+      display: grid;
+      place-items: center;
+      justify-self: center;
+      width: 42px;
+      height: 42px;
+      border: 3px solid #fff;
+      border-radius: 50% 50% 50% 8px;
+      transform: rotate(-45deg);
+      color: #fff;
+      font-weight: 800;
+      box-shadow: 0 10px 20px rgba(23, 33, 28, 0.22);
+    }
+
+    .pin span {
+      transform: rotate(45deg);
+    }
+
+    .marker-label {
+      padding: 9px 10px;
+      border: 1px solid rgba(23, 33, 28, 0.12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      text-align: center;
+      box-shadow: 0 12px 24px rgba(23, 33, 28, 0.14);
+    }
+
+    .marker-label strong,
+    .marker-label span {
+      display: block;
+    }
+
+    .marker-label span {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
+    .map-legend {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .person {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .avatar {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 800;
+    }
+
+    .person span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.86rem;
+      margin-top: 3px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 32px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .safe {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .watch {
+      color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .danger {
+      color: var(--red);
+      background: var(--red-soft);
+    }
+
+    .offline {
+      color: var(--gray);
+      background: var(--gray-soft);
+    }
+
+    .metric-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .metric {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .metric:first-child {
+      border-top: 0;
+    }
+
+    .metric dt {
+      color: var(--muted);
+    }
+
+    .metric dd {
+      margin: 0;
+      font-weight: 650;
+      line-height: 1.45;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      border: 1px solid #173d31;
+      border-radius: 8px;
+      background: #173d31;
+      color: #fff;
+      padding: 9px 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .btn.secondary {
+      border-color: var(--line);
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .btn.warn {
+      border-color: var(--amber);
+      background: var(--amber);
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      max-width: min(360px, calc(100vw - 36px));
+      transform: translateY(120px);
+      opacity: 0;
+      border-radius: 8px;
+      background: #173d31;
+      color: #fff;
+      padding: 13px 15px;
+      box-shadow: 0 18px 44px rgba(23, 61, 49, 0.25);
+      transition: 180ms ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .event:first-child {
+      border-top: 0;
+    }
+
+    .event time {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .event strong {
+      display: block;
+      line-height: 1.35;
+    }
+
+    .event span {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .detail-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .sensor {
+      min-height: 100px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfb;
+    }
+
+    .sensor span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .sensor strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 1.05rem;
+      line-height: 1.35;
+    }
+
+    .table-tools {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 690px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f7faf8;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .segmented {
+      display: inline-flex;
+      gap: 5px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.08fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .settings-panel {
+      padding: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .check-row,
+    .range-row,
+    .field-row {
+      display: grid;
+      gap: 7px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .check-row:first-child,
+    .range-row:first-child,
+    .field-row:first-child {
+      border-top: 0;
+    }
+
+    label {
+      color: var(--ink);
+      font-weight: 650;
+    }
+
+    .check-row label {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: 650;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #173d31;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #173d31;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid #cbd8d1;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+    }
+
+    .range-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+    }
+
+    .range-value {
+      color: var(--ink);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .compact-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .mobile-only {
+      display: none;
+    }
+
+    @media (max-width: 860px) {
+      .topbar-inner,
+      .layout-two,
+      .detail-hero,
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .page-head > div {
+        width: 100%;
+      }
+
+      .page-head .btn {
+        width: 100%;
+      }
+
+      .nav {
+        overflow-x: auto;
+        justify-content: flex-start;
+      }
+
+      .status-strip,
+      .device-grid,
+      .sensor-grid,
+      .location-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .map-actions .btn {
+        flex: 1 1 180px;
+      }
+
+      .desktop-only {
+        display: none;
+      }
+
+      .mobile-only {
+        display: inline;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar-inner,
+      main {
+        width: min(100% - 22px, 1180px);
+      }
+
+      .topbar-inner {
+        padding: 12px 0;
+      }
+
+      .brand {
+        align-items: flex-start;
+      }
+
+      .brand-mark {
+        width: 38px;
+        height: 38px;
+      }
+
+      .nav button,
+      .segmented button {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+      }
+
+      .metric {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .event {
+        grid-template-columns: 48px minmax(0, 1fr);
+      }
+
+      .event .badge {
+        grid-column: 2;
+        justify-self: start;
+      }
+
+      .map {
+        min-height: 280px;
+      }
+
+      .leaflet-map {
+        min-height: 320px;
+      }
+
+      .marker {
+        width: 96px;
+      }
+
+      .marker-label {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">ST</div>
+          <div>
+            <h1>Safe T Care Dashboard</h1>
+            <p>ระบบติดตามความปลอดภัยนอกบ้านสำหรับผู้ดูแล</p>
+          </div>
+        </div>
+        <nav class="nav" aria-label="เมนูหลัก">
+          <button class="active" type="button" data-page-target="dashboard">หน้าหลัก</button>
+          <button type="button" data-page-target="detail">รายละเอียด</button>
+          <button type="button" data-page-target="alerts">แจ้งเตือน</button>
+          <button type="button" data-page-target="settings">ตั้งค่า</button>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page active" id="page-dashboard" aria-labelledby="dashboard-title">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">กำลังติดตาม 2 อุปกรณ์</p>
+            <h2 id="dashboard-title">ภาพรวมความปลอดภัย</h2>
+            <p class="subtext">ดูสถานะล่าสุดของ SafeT 01 และ SafeT 02</p>
+          </div>
+          <button class="btn secondary" type="button" data-refresh>จำลองอัปเดตข้อมูล</button>
+        </div>
+
+        <div class="status-strip" id="status-summary"></div>
+
+        <div class="layout-two">
+          <section class="band">
+            <div class="section-title">
+              <div>
+                <h3>แผนที่รวม</h3>
+                <p>Demo Mode: อ่านตำแหน่งจาก Browser และแสดงบน OpenStreetMap</p>
+              </div>
+            </div>
+            <div class="map leaflet-map" id="dashboard-map" aria-label="แผนที่ตำแหน่งอุปกรณ์ SafeT"></div>
+            <div class="map-actions">
+              <button class="btn secondary" type="button" data-update-location>อัปเดตตำแหน่ง</button>
+              <button class="btn warn" type="button" data-toggle-sos>จำลอง SOS</button>
+            </div>
+            <p class="map-note" id="geo-note">
+              ตำแหน่งที่แสดงเป็นตำแหน่งจากเครื่องที่เปิดเว็บอยู่ ใช้สำหรับจำลองการทำงานของ SafeT Dashboard
+            </p>
+            <div class="map-legend" id="map-legend"></div>
+          </section>
+
+          <section class="band">
+            <div class="section-title">
+              <div>
+                <h3>เหตุการณ์ล่าสุด</h3>
+                <p>รายการแจ้งเตือนจากทุกอุปกรณ์</p>
+              </div>
+              <button class="btn secondary" type="button" data-page-target="alerts">ดูทั้งหมด</button>
+            </div>
+            <div class="timeline" id="recent-events"></div>
+          </section>
+        </div>
+
+        <section>
+          <div class="section-title">
+            <div>
+              <h3>อุปกรณ์ที่ติดตาม</h3>
+              <p>สรุปสถานะที่ผู้ดูแลอ่านได้ทันที</p>
+            </div>
+          </div>
+          <div class="device-grid" id="device-cards"></div>
+        </section>
+      </section>
+
+      <section class="page" id="page-detail" aria-labelledby="detail-title">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Device Detail</p>
+            <h2 id="detail-title">รายละเอียดอุปกรณ์</h2>
+            <p class="subtext">เลือก SafeT 01 หรือ SafeT 02 เพื่อดูข้อมูลตำแหน่ง เซนเซอร์ และเหตุการณ์เฉพาะอุปกรณ์</p>
+          </div>
+          <div class="segmented" id="detail-device-tabs" aria-label="เลือกอุปกรณ์หน้า Detail"></div>
+        </div>
+
+        <div class="detail-hero">
+          <section class="card" id="detail-profile"></section>
+          <section class="band">
+            <div class="section-title">
+              <div>
+                <h3>ตำแหน่งล่าสุด</h3>
+                <p id="detail-location-note"></p>
+              </div>
+            </div>
+            <div class="map leaflet-map" id="detail-map" aria-label="แผนที่ตำแหน่งล่าสุดของอุปกรณ์ที่เลือก"></div>
+            <div class="map-legend" id="detail-map-meta"></div>
+          </section>
+        </div>
+
+        <section class="band">
+          <div class="section-title">
+            <div>
+              <h3>สถานะเซนเซอร์</h3>
+              <p>ข้อมูลถูกแปลงเป็นข้อความที่ผู้ดูแลเข้าใจง่าย</p>
+            </div>
+          </div>
+          <div class="sensor-grid" id="sensor-grid"></div>
+        </section>
+
+        <section class="band">
+          <div class="section-title">
+            <div>
+              <h3>เหตุการณ์ของอุปกรณ์นี้</h3>
+              <p id="detail-event-note"></p>
+            </div>
+          </div>
+          <div class="timeline" id="detail-events"></div>
+        </section>
+      </section>
+
+      <section class="page" id="page-alerts" aria-labelledby="alerts-title">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Alert History</p>
+            <h2 id="alerts-title">ประวัติการแจ้งเตือน</h2>
+            <p class="subtext">ตรวจสอบเหตุการณ์ย้อนหลังของทุกอุปกรณ์</p>
+          </div>
+          <div class="segmented" id="alert-filter" aria-label="กรองประวัติการแจ้งเตือน">
+            <button class="active" type="button" data-filter="all">ทั้งหมด</button>
+            <button type="button" data-filter="device_01">คุณตา</button>
+            <button type="button" data-filter="device_02">หลานชาย</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>เวลา</th>
+                <th>ผู้ใช้งาน</th>
+                <th>อุปกรณ์</th>
+                <th>เหตุการณ์</th>
+                <th>ระดับ</th>
+              </tr>
+            </thead>
+            <tbody id="alert-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="page" id="page-settings" aria-labelledby="settings-title">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Settings</p>
+            <h2 id="settings-title">ตั้งค่าการแสดงผลและการแจ้งเตือน</h2>
+            <p class="subtext">ตั้งค่าแยกตามอุปกรณ์เพื่อจำลองการดูแลผู้ใช้งานแต่ละกลุ่ม</p>
+          </div>
+          <div class="segmented" id="settings-device-tabs" aria-label="เลือกอุปกรณ์หน้า Settings"></div>
+        </div>
+
+        <div class="settings-grid">
+          <section class="settings-panel">
+            <div class="section-title">
+              <div>
+                <h3>แสดงผลบน Dashboard</h3>
+                <p>เลือกข้อมูลที่ต้องการเห็นในการ์ดอุปกรณ์</p>
+              </div>
+            </div>
+            <div class="form-grid" id="display-settings"></div>
+          </section>
+
+          <section class="settings-panel">
+            <div class="section-title">
+              <div>
+                <h3>แจ้งเตือนและข้อมูลผู้ใช้งาน</h3>
+                <p>ปรับค่า threshold และชื่อที่แสดงบนระบบ</p>
+              </div>
+            </div>
+            <div class="form-grid" id="alert-settings"></div>
+            <div class="actions">
+              <button class="btn" type="button" data-save-settings>บันทึกการตั้งค่า</button>
+              <button class="btn secondary" type="button" data-reset-settings>รีเซ็ตค่าเริ่มต้น</button>
+              <button class="btn warn" type="button" data-preview-dashboard>ดูตัวอย่าง Dashboard</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js" referrerpolicy="no-referrer"></script>
+  <script>
+    const defaultDevices = [
+      {
+        id: "device_01",
+        deviceName: "SafeT 01",
+        userName: "คุณตา",
+        userType: "ผู้สูงอายุ",
+        latitude: 6.5421,
+        longitude: 101.2834,
+        accuracyMeters: 50,
+        locationSource: "Demo fallback",
+        sosActive: false,
+        motionStatus: "moving",
+        stoppedDurationMin: 0,
+        fallDetected: false,
+        obstacleStatus: "clear",
+        obstacleDistanceCm: 150,
+        networkStatus: "online",
+        batteryPercent: 82,
+        lastUpdateSeconds: 5
+      },
+      {
+        id: "device_02",
+        deviceName: "SafeT 02",
+        userName: "หลานชาย",
+        userType: "เด็ก",
+        latitude: 6.5408,
+        longitude: 101.2819,
+        accuracyMeters: 75,
+        locationSource: "Simulated Location",
+        sosActive: false,
+        motionStatus: "stopped",
+        stoppedDurationMin: 6,
+        fallDetected: false,
+        obstacleStatus: "warning",
+        obstacleDistanceCm: 45,
+        networkStatus: "online",
+        batteryPercent: 45,
+        lastUpdateSeconds: 8
+      }
+    ];
+
+    const defaultSettings = {
+      device_01: {
+        showGPS: true,
+        showMotion: true,
+        showFall: true,
+        showObstacle: true,
+        showNetwork: true,
+        showBattery: true,
+        showLastUpdate: true,
+        showHistory: true,
+        fallAlert: true,
+        batteryThreshold: 25,
+        offlineThresholdMin: 3,
+        stoppedThresholdMin: 10,
+        obstacleThresholdCm: 70,
+        gpsNoUpdateThresholdMin: 2
+      },
+      device_02: {
+        showGPS: true,
+        showMotion: true,
+        showFall: true,
+        showObstacle: true,
+        showNetwork: true,
+        showBattery: true,
+        showLastUpdate: true,
+        showHistory: true,
+        fallAlert: true,
+        batteryThreshold: 20,
+        offlineThresholdMin: 5,
+        stoppedThresholdMin: 15,
+        obstacleThresholdCm: 50,
+        gpsNoUpdateThresholdMin: 2
+      }
+    };
+
+    const defaultAlerts = [
+      { time: "14:35", deviceId: "device_02", userName: "หลานชาย", deviceName: "SafeT 02", event: "พบสิ่งกีดขวางด้านหน้า", level: "เฝ้าระวัง" },
+      { time: "14:10", deviceId: "device_01", userName: "คุณตา", deviceName: "SafeT 01", event: "อุปกรณ์ออนไลน์", level: "ปกติ" },
+      { time: "13:50", deviceId: "device_02", userName: "หลานชาย", deviceName: "SafeT 02", event: "แบตเตอรี่ต่ำ", level: "เฝ้าระวัง" },
+      { time: "13:20", deviceId: "device_01", userName: "คุณตา", deviceName: "SafeT 01", event: "ตำแหน่ง GPS อัปเดตแล้ว", level: "ปกติ" },
+      { time: "12:55", deviceId: "device_02", userName: "หลานชาย", deviceName: "SafeT 02", event: "หยุดนิ่งนานเกินกำหนด", level: "เฝ้าระวัง" }
+    ];
+
+    const state = {
+      devices: JSON.parse(JSON.stringify(defaultDevices)),
+      settings: loadSettings(),
+      alerts: JSON.parse(JSON.stringify(defaultAlerts)),
+      activePage: "dashboard",
+      selectedDeviceId: "device_01",
+      settingsDeviceId: "device_01",
+      alertFilter: "all",
+      geoMessage: "ระบบพร้อมอ่านตำแหน่งจาก Browser กดอนุญาตเมื่อมีการขอสิทธิ์",
+      geoUpdatedAt: null,
+      isLocating: false
+    };
+
+    const mapRuntime = {
+      dashboard: null,
+      detail: null,
+      markers: {},
+      detailMarker: null,
+      accuracyCircle: null,
+      detailAccuracyCircle: null,
+      leafletReady: false
+    };
+
+    function loadSettings() {
+      try {
+        const stored = localStorage.getItem("safeTSettings");
+        return stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(defaultSettings));
+      } catch {
+        return JSON.parse(JSON.stringify(defaultSettings));
+      }
+    }
+
+    function saveSettings() {
+      localStorage.setItem("safeTSettings", JSON.stringify(state.settings));
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function evaluateStatus(device) {
+      const settings = state.settings[device.id];
+      if (settings.fallAlert && device.fallDetected) return "ฉุกเฉิน";
+      if (device.obstacleStatus === "danger" || device.obstacleDistanceCm < settings.obstacleThresholdCm * 0.55) return "ฉุกเฉิน";
+      if (device.networkStatus === "offline") return "ออฟไลน์";
+      if (device.batteryPercent < settings.batteryThreshold) return "เฝ้าระวัง";
+      if (device.motionStatus === "stopped" && device.stoppedDurationMin > settings.stoppedThresholdMin) return "เฝ้าระวัง";
+      if (device.obstacleStatus === "warning" || device.obstacleDistanceCm <= settings.obstacleThresholdCm) return "เฝ้าระวัง";
+      return "ปลอดภัย";
+    }
+
+    function statusClass(status) {
+      return {
+        "ปลอดภัย": "safe",
+        "เฝ้าระวัง": "watch",
+        "ฉุกเฉิน": "danger",
+        "ออฟไลน์": "offline",
+        "ปกติ": "safe"
+      }[status] || "offline";
+    }
+
+    function statusBadge(status) {
+      return `<span class="badge ${statusClass(status)}"><span class="dot"></span>${escapeHtml(status)}</span>`;
+    }
+
+    function deviceById(id) {
+      return state.devices.find((device) => device.id === id);
+    }
+
+    function lastUpdate(device) {
+      if (device.locationUpdatedAt) {
+        return new Date(device.locationUpdatedAt).toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+      }
+      if (device.lastUpdateSeconds < 60) return `${device.lastUpdateSeconds} วินาทีที่แล้ว`;
+      return `${Math.round(device.lastUpdateSeconds / 60)} นาทีที่แล้ว`;
+    }
+
+    function motionText(device) {
+      if (device.motionStatus === "moving") return "กำลังเคลื่อนที่";
+      return `หยุดนิ่ง ${device.stoppedDurationMin} นาที`;
+    }
+
+    function fallText(device) {
+      return device.fallDetected ? "ตรวจพบการล้มรุนแรง" : "ไม่พบการล้มรุนแรง";
+    }
+
+    function obstacleText(device) {
+      if (device.obstacleStatus === "danger") return `พบสิ่งกีดขวางใกล้มาก (${device.obstacleDistanceCm} cm)`;
+      if (device.obstacleStatus === "warning") return `พบสิ่งกีดขวางด้านหน้า (${device.obstacleDistanceCm} cm)`;
+      return `ไม่พบสิ่งกีดขวางใกล้ตัว (${device.obstacleDistanceCm} cm)`;
+    }
+
+    function networkText(device) {
+      return device.networkStatus === "online" ? "ออนไลน์" : "ออฟไลน์";
+    }
+
+    function batteryText(device) {
+      return `${device.batteryPercent}%`;
+    }
+
+    function locationText(device) {
+      return `${device.latitude.toFixed(4)}, ${device.longitude.toFixed(4)}`;
+    }
+
+    function preciseLocationText(device) {
+      return `${device.latitude.toFixed(6)}, ${device.longitude.toFixed(6)}`;
+    }
+
+    function accuracyText(device) {
+      return device.accuracyMeters ? `${Math.round(device.accuracyMeters)} เมตร` : "รอข้อมูล";
+    }
+
+    function initials(device) {
+      return device.userName.replace(/^คุณ/, "").slice(0, 2);
+    }
+
+    function render() {
+      renderNavigation();
+      renderSummary();
+      renderDashboardMap();
+      renderDeviceCards();
+      renderEvents();
+      renderDetailTabs();
+      renderDetail();
+      renderAlertTable();
+      renderSettingsTabs();
+      renderSettings();
+    }
+
+    function renderNavigation() {
+      document.querySelectorAll("[data-page-target]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.pageTarget === state.activePage);
+      });
+      document.querySelectorAll(".page").forEach((page) => {
+        page.classList.toggle("active", page.id === `page-${state.activePage}`);
+      });
+    }
+
+    function renderSummary() {
+      const counts = { "ปลอดภัย": 0, "เฝ้าระวัง": 0, "ฉุกเฉิน": 0, "ออฟไลน์": 0 };
+      state.devices.forEach((device) => counts[evaluateStatus(device)] += 1);
+      const items = [
+        ["ปลอดภัย", counts["ปลอดภัย"]],
+        ["เฝ้าระวัง", counts["เฝ้าระวัง"]],
+        ["ฉุกเฉิน", counts["ฉุกเฉิน"]],
+        ["ออฟไลน์", counts["ออฟไลน์"]]
+      ];
+      document.querySelector("#status-summary").innerHTML = items.map(([label, count]) => `
+        <div class="stat">
+          <span>${label}</span>
+          <strong>${count}</strong>
+        </div>
+      `).join("");
+    }
+
+    function markerPosition(device) {
+      const positions = {
+        device_01: { left: "42%", top: "58%" },
+        device_02: { left: "65%", top: "44%" }
+      };
+      return positions[device.id] || { left: "50%", top: "50%" };
+    }
+
+    function mapMarker(device) {
+      const pos = markerPosition(device);
+      const status = evaluateStatus(device);
+      return `
+        <div class="marker" style="left:${pos.left}; top:${pos.top};">
+          <div class="pin ${statusClass(status)}"><span>${device.deviceName.replace("SafeT ", "")}</span></div>
+          <div class="marker-label">
+            <strong>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</strong>
+            <span>ตำแหน่งล่าสุด ${lastUpdate(device)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDashboardMap() {
+      renderLocationPanel();
+
+      if (!window.L) {
+        renderMapFallback("กำลังรอ Leaflet.js", "หากเปิดแบบออฟไลน์หรือ CDN โหลดไม่ได้ ระบบจะแสดงเฉพาะข้อมูลตำแหน่งด้านล่าง");
+        return;
+      }
+
+      const mapElement = document.querySelector("#dashboard-map");
+      if (!mapElement) return;
+
+      if (!mapRuntime.dashboard) {
+        mapRuntime.dashboard = L.map(mapElement, {
+          zoomControl: true,
+          scrollWheelZoom: true
+        }).setView([state.devices[0].latitude, state.devices[0].longitude], 15);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors"
+        }).addTo(mapRuntime.dashboard);
+      }
+
+      mapRuntime.leafletReady = true;
+      updateLeafletMarkers();
+    }
+
+    function renderMapFallback(title, message, selector = "#dashboard-map") {
+      const mapElement = document.querySelector(selector);
+      const existingMap = selector === "#detail-map" ? mapRuntime.detail : mapRuntime.dashboard;
+      if (!mapElement || existingMap) return;
+      mapElement.innerHTML = `
+        <div class="map-empty">
+          <div>
+            <strong>${escapeHtml(title)}</strong>
+            <span>${escapeHtml(message)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDetailMap(device) {
+      renderDetailMapMeta(device);
+
+      if (!window.L) {
+        renderMapFallback(
+          "กำลังรอ Leaflet.js",
+          "หากเปิดแบบออฟไลน์หรือ CDN โหลดไม่ได้ ระบบจะแสดงข้อมูลตำแหน่งด้านล่างแทน",
+          "#detail-map"
+        );
+        return;
+      }
+
+      const mapElement = document.querySelector("#detail-map");
+      if (!mapElement) return;
+      const latLng = [device.latitude, device.longitude];
+
+      if (!mapRuntime.detail) {
+        mapElement.innerHTML = "";
+        mapRuntime.detail = L.map(mapElement, {
+          zoomControl: true,
+          scrollWheelZoom: true
+        }).setView(latLng, 17);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors"
+        }).addTo(mapRuntime.detail);
+      }
+
+      if (mapRuntime.detailMarker) {
+        mapRuntime.detailMarker.setLatLng(latLng);
+      } else {
+        mapRuntime.detailMarker = L.marker(latLng).addTo(mapRuntime.detail);
+      }
+      mapRuntime.detailMarker.bindPopup(devicePopupHtml(device)).openPopup();
+
+      if (mapRuntime.detailAccuracyCircle) {
+        mapRuntime.detailAccuracyCircle.setLatLng(latLng);
+        mapRuntime.detailAccuracyCircle.setRadius(device.accuracyMeters || 50);
+      } else {
+        mapRuntime.detailAccuracyCircle = L.circle(latLng, {
+          radius: device.accuracyMeters || 50,
+          color: "#235f8f",
+          fillColor: "#235f8f",
+          fillOpacity: 0.12,
+          weight: 2
+        }).addTo(mapRuntime.detail);
+      }
+
+      mapRuntime.detail.setView(latLng, 17);
+      setTimeout(() => mapRuntime.detail?.invalidateSize(), 80);
+    }
+
+    function renderDetailMapMeta(device) {
+      const status = device.sosActive ? "SOS" : (device.id === "device_02" ? "Demo" : "Online");
+      document.querySelector("#detail-map-meta").innerHTML = `
+        <div class="location-grid">
+          <article class="location-card">
+            <div class="location-card-head">
+              <div>
+                <h4>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</h4>
+                <p>${escapeHtml(device.locationSource || "Demo")}</p>
+              </div>
+              ${statusBadge(status === "SOS" ? "ฉุกเฉิน" : (status === "Online" ? "ปกติ" : "เฝ้าระวัง"))}
+            </div>
+            <dl class="mini-list">
+              <div><dt>สถานะ</dt><dd>${escapeHtml(status)}</dd></div>
+              <div><dt>Latitude</dt><dd>${device.latitude.toFixed(6)}</dd></div>
+              <div><dt>Longitude</dt><dd>${device.longitude.toFixed(6)}</dd></div>
+              <div><dt>Accuracy</dt><dd>${escapeHtml(accuracyText(device))}</dd></div>
+              <div><dt>Last Update</dt><dd>${escapeHtml(lastUpdate(device))}</dd></div>
+            </dl>
+          </article>
+        </div>
+      `;
+    }
+
+    function renderLocationPanel() {
+      document.querySelector("#geo-note").textContent = state.geoMessage;
+      document.querySelector("#map-legend").innerHTML = `
+        <div class="location-grid">
+          ${state.devices.map((device) => {
+            const status = device.sosActive ? "SOS" : (device.id === "device_02" ? "Demo" : "Online");
+            return `
+              <article class="location-card">
+                <div class="location-card-head">
+                  <div>
+                    <h4>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</h4>
+                    <p>${escapeHtml(device.locationSource || "Demo")}</p>
+                  </div>
+                  ${statusBadge(status === "SOS" ? "ฉุกเฉิน" : (status === "Online" ? "ปกติ" : "เฝ้าระวัง"))}
+                </div>
+                <dl class="mini-list">
+                  <div><dt>สถานะ</dt><dd>${escapeHtml(status)}</dd></div>
+                  <div><dt>Latitude</dt><dd>${device.latitude.toFixed(6)}</dd></div>
+                  <div><dt>Longitude</dt><dd>${device.longitude.toFixed(6)}</dd></div>
+                  <div><dt>Accuracy</dt><dd>${escapeHtml(accuracyText(device))}</dd></div>
+                  <div><dt>Last Update</dt><dd>${escapeHtml(lastUpdate(device))}</dd></div>
+                </dl>
+              </article>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function updateLeafletMarkers() {
+      if (!mapRuntime.dashboard || !window.L) return;
+
+      const bounds = [];
+      state.devices.forEach((device) => {
+        const latLng = [device.latitude, device.longitude];
+        bounds.push(latLng);
+
+        if (mapRuntime.markers[device.id]) {
+          mapRuntime.markers[device.id].setLatLng(latLng);
+        } else {
+          mapRuntime.markers[device.id] = L.marker(latLng).addTo(mapRuntime.dashboard);
+        }
+
+        mapRuntime.markers[device.id].bindPopup(devicePopupHtml(device));
+      });
+
+      const safeT01 = deviceById("device_01");
+      if (safeT01) {
+        const latLng = [safeT01.latitude, safeT01.longitude];
+        if (mapRuntime.accuracyCircle) {
+          mapRuntime.accuracyCircle.setLatLng(latLng);
+          mapRuntime.accuracyCircle.setRadius(safeT01.accuracyMeters || 50);
+        } else {
+          mapRuntime.accuracyCircle = L.circle(latLng, {
+            radius: safeT01.accuracyMeters || 50,
+            color: "#235f8f",
+            fillColor: "#235f8f",
+            fillOpacity: 0.12,
+            weight: 2
+          }).addTo(mapRuntime.dashboard);
+        }
+      }
+
+      if (bounds.length > 1) {
+        mapRuntime.dashboard.fitBounds(bounds, { padding: [36, 36], maxZoom: 17 });
+      } else if (bounds.length === 1) {
+        mapRuntime.dashboard.setView(bounds[0], 17);
+      }
+
+      setTimeout(() => mapRuntime.dashboard?.invalidateSize(), 50);
+    }
+
+    function devicePopupHtml(device) {
+      const status = device.sosActive ? "SOS" : (device.id === "device_02" ? "Demo" : "Online");
+      return `
+        <strong>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</strong><br>
+        สถานะ: ${escapeHtml(status)}<br>
+        Latitude: ${device.latitude.toFixed(6)}<br>
+        Longitude: ${device.longitude.toFixed(6)}<br>
+        Accuracy: ${escapeHtml(accuracyText(device))}<br>
+        Last Update: ${escapeHtml(lastUpdate(device))}
+      `;
+    }
+
+    function visibleMetrics(device) {
+      const settings = state.settings[device.id];
+      const metrics = [];
+      if (settings.showGPS) metrics.push(["ตำแหน่งล่าสุด", locationText(device)]);
+      if (settings.showMotion) metrics.push(["การเคลื่อนไหว", motionText(device)]);
+      if (settings.showFall) metrics.push(["การล้มรุนแรง", fallText(device)]);
+      if (settings.showObstacle) metrics.push(["สิ่งกีดขวาง", obstacleText(device)]);
+      if (settings.showNetwork) metrics.push(["การเชื่อมต่อ", networkText(device)]);
+      if (settings.showBattery) metrics.push(["แบตเตอรี่", batteryText(device)]);
+      if (settings.showLastUpdate) metrics.push(["อัปเดตล่าสุด", lastUpdate(device)]);
+      return metrics;
+    }
+
+    function renderDeviceCards() {
+      document.querySelector("#device-cards").innerHTML = state.devices.map((device) => {
+        const status = evaluateStatus(device);
+        return `
+          <article class="card">
+            <div class="card-head">
+              <div class="person">
+                <div class="avatar">${escapeHtml(initials(device))}</div>
+                <div>
+                  <h3>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</h3>
+                  <span>${escapeHtml(device.userType)}</span>
+                </div>
+              </div>
+              ${statusBadge(status)}
+            </div>
+            <dl class="metric-list">
+              ${visibleMetrics(device).map(([label, value]) => `
+                <div class="metric">
+                  <dt>${label}</dt>
+                  <dd>${escapeHtml(value)}</dd>
+                </div>
+              `).join("")}
+            </dl>
+            <div class="actions">
+              <button class="btn" type="button" data-open-detail="${device.id}">ดูรายละเอียด</button>
+              <button class="btn secondary" type="button" data-focus-alerts="${device.id}">ดูแจ้งเตือน</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderEvents() {
+      const visibleAlerts = state.alerts
+        .filter((alert) => state.settings[alert.deviceId]?.showHistory)
+        .slice(0, 4);
+      document.querySelector("#recent-events").innerHTML = visibleAlerts.length
+        ? visibleAlerts.map(eventRow).join("")
+        : `<p class="compact-note">ปิดการแสดงประวัติเหตุการณ์ล่าสุดใน Settings</p>`;
+    }
+
+    function eventRow(alert) {
+      return `
+        <div class="event">
+          <time>${alert.time}</time>
+          <div>
+            <strong>${escapeHtml(alert.event)}</strong>
+            <span>${escapeHtml(alert.deviceName)} - ${escapeHtml(alert.userName)}</span>
+          </div>
+          ${statusBadge(alert.level)}
+        </div>
+      `;
+    }
+
+    function renderDetailTabs() {
+      document.querySelector("#detail-device-tabs").innerHTML = state.devices.map((device) => `
+        <button class="${device.id === state.selectedDeviceId ? "active" : ""}" type="button" data-select-detail="${device.id}">
+          ${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}
+        </button>
+      `).join("");
+    }
+
+    function renderDetail() {
+      const device = deviceById(state.selectedDeviceId);
+      const status = evaluateStatus(device);
+      document.querySelector("#detail-profile").innerHTML = `
+        <div class="card-head">
+          <div class="person">
+            <div class="avatar">${escapeHtml(initials(device))}</div>
+            <div>
+              <h3>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</h3>
+              <span>${escapeHtml(device.userType)}</span>
+            </div>
+          </div>
+          ${statusBadge(status)}
+        </div>
+        <dl class="metric-list">
+          <div class="metric"><dt>ชื่อผู้ใช้งาน</dt><dd>${escapeHtml(device.userName)}</dd></div>
+          <div class="metric"><dt>ชื่ออุปกรณ์</dt><dd>${escapeHtml(device.deviceName)}</dd></div>
+          <div class="metric"><dt>ประเภทผู้ใช้งาน</dt><dd>${escapeHtml(device.userType)}</dd></div>
+          <div class="metric"><dt>สถานะรวม</dt><dd>${status}</dd></div>
+          <div class="metric"><dt>พิกัด GPS</dt><dd>${preciseLocationText(device)}</dd></div>
+          <div class="metric"><dt>ความแม่นยำ</dt><dd>${escapeHtml(accuracyText(device))}</dd></div>
+          <div class="metric"><dt>แหล่งตำแหน่ง</dt><dd>${escapeHtml(device.locationSource || "Demo")}</dd></div>
+        </dl>
+      `;
+      document.querySelector("#detail-location-note").textContent = `ตำแหน่งล่าสุดของ${device.userName} อัปเดตเมื่อ ${lastUpdate(device)}`;
+      renderDetailMap(device);
+      document.querySelector("#sensor-grid").innerHTML = [
+        ["การเคลื่อนไหว", motionText(device)],
+        ["การล้ม", fallText(device)],
+        ["สิ่งกีดขวาง", obstacleText(device)],
+        ["แบตเตอรี่", batteryText(device)],
+        ["อินเทอร์เน็ต", networkText(device)],
+        ["เวลาอัปเดตล่าสุด", lastUpdate(device)]
+      ].map(([label, value]) => `
+        <div class="sensor">
+          <span>${label}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `).join("");
+      const events = state.alerts.filter((alert) => alert.deviceId === device.id);
+      document.querySelector("#detail-event-note").textContent = `${events.length} เหตุการณ์ล่าสุด`;
+      document.querySelector("#detail-events").innerHTML = events.map(eventRow).join("");
+    }
+
+    function renderAlertTable() {
+      document.querySelectorAll("#alert-filter button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.filter === state.alertFilter);
+      });
+      const alerts = state.alertFilter === "all"
+        ? state.alerts
+        : state.alerts.filter((alert) => alert.deviceId === state.alertFilter);
+      document.querySelector("#alert-table").innerHTML = alerts.map((alert) => `
+        <tr>
+          <td>${escapeHtml(alert.time)}</td>
+          <td>${escapeHtml(alert.userName)}</td>
+          <td>${escapeHtml(alert.deviceName)}</td>
+          <td>${escapeHtml(alert.event)}</td>
+          <td>${statusBadge(alert.level)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderSettingsTabs() {
+      document.querySelector("#settings-device-tabs").innerHTML = state.devices.map((device) => `
+        <button class="${device.id === state.settingsDeviceId ? "active" : ""}" type="button" data-select-settings="${device.id}">
+          ${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}
+        </button>
+      `).join("");
+    }
+
+    function renderSettings() {
+      const device = deviceById(state.settingsDeviceId);
+      const settings = state.settings[state.settingsDeviceId];
+      const displayOptions = [
+        ["showGPS", "แสดงตำแหน่ง GPS"],
+        ["showMotion", "แสดงสถานะการเคลื่อนไหว"],
+        ["showFall", "แสดงสถานะการล้ม"],
+        ["showObstacle", "แสดงสถานะสิ่งกีดขวาง"],
+        ["showNetwork", "แสดงสถานะอินเทอร์เน็ต"],
+        ["showBattery", "แสดงแบตเตอรี่"],
+        ["showLastUpdate", "แสดงเวลาอัปเดตล่าสุด"],
+        ["showHistory", "แสดงประวัติเหตุการณ์ล่าสุด"]
+      ];
+      document.querySelector("#display-settings").innerHTML = displayOptions.map(([key, label]) => `
+        <div class="check-row">
+          <label>
+            <input type="checkbox" ${settings[key] ? "checked" : ""} data-setting-check="${key}">
+            ${label}
+          </label>
+        </div>
+      `).join("");
+
+      const rangeOptions = [
+        ["batteryThreshold", "แจ้งเตือนแบตเตอรี่ต่ำกว่า", "%", 5, 80],
+        ["offlineThresholdMin", "แจ้งเตือนอุปกรณ์ออฟไลน์เกิน", "นาที", 1, 20],
+        ["stoppedThresholdMin", "แจ้งเตือนเมื่อหยุดนิ่งเกิน", "นาที", 1, 30],
+        ["obstacleThresholdCm", "แจ้งเตือนเมื่อพบสิ่งกีดขวางใกล้กว่า", "cm", 20, 150],
+        ["gpsNoUpdateThresholdMin", "แจ้งเตือนเมื่อ GPS ไม่อัปเดตเกิน", "นาที", 1, 15]
+      ];
+
+      document.querySelector("#alert-settings").innerHTML = `
+        <div class="check-row">
+          <label>
+            <input type="checkbox" ${settings.fallAlert ? "checked" : ""} data-setting-check="fallAlert">
+            แจ้งเตือนเมื่อตรวจพบการล้มรุนแรง
+          </label>
+        </div>
+        ${rangeOptions.map(([key, label, unit, min, max]) => `
+          <div class="range-row">
+            <div class="range-head">
+              <label for="${key}">${label}</label>
+              <span class="range-value">${settings[key]} ${unit}</span>
+            </div>
+            <input id="${key}" type="range" min="${min}" max="${max}" value="${settings[key]}" data-setting-range="${key}">
+          </div>
+        `).join("")}
+        <div class="field-row">
+          <label for="userName">ชื่อผู้ใช้งาน</label>
+          <input id="userName" type="text" value="${escapeHtml(device.userName)}" data-device-field="userName">
+        </div>
+        <div class="field-row">
+          <label for="deviceName">ชื่ออุปกรณ์</label>
+          <input id="deviceName" type="text" value="${escapeHtml(device.deviceName)}" data-device-field="deviceName">
+        </div>
+        <div class="field-row">
+          <label for="userType">ประเภทผู้ใช้งาน</label>
+          <select id="userType" data-device-field="userType">
+            ${["ผู้สูงอายุ", "เด็ก", "ผู้พิการทางสายตา"].map((type) => `
+              <option value="${type}" ${device.userType === type ? "selected" : ""}>${type}</option>
+            `).join("")}
+          </select>
+        </div>
+      `;
+    }
+
+    function showPage(page) {
+      state.activePage = page;
+      renderNavigation();
+      if (page === "dashboard") {
+        setTimeout(() => {
+          mapRuntime.dashboard?.invalidateSize();
+          updateLeafletMarkers();
+        }, 80);
+      }
+      if (page === "detail") {
+        setTimeout(() => {
+          renderDetailMap(deviceById(state.selectedDeviceId));
+          mapRuntime.detail?.invalidateSize();
+        }, 80);
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showToast(message) {
+      const toast = document.querySelector("#toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 2400);
+    }
+
+    function requestCurrentLocation() {
+      if (!navigator.geolocation) {
+        state.geoMessage = "Browser นี้ไม่รองรับ Geolocation API จึงใช้ตำแหน่ง demo สำหรับแสดงแนวคิดระบบ";
+        renderDashboardMap();
+        return;
+      }
+
+      state.isLocating = true;
+      state.geoMessage = "กำลังขอตำแหน่งจาก Browser กรุณากดอนุญาตเมื่อมีหน้าต่างขอสิทธิ์";
+      renderLocationPanel();
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          applyBrowserLocation(position);
+          state.isLocating = false;
+          state.geoMessage = "อ่านตำแหน่งจาก Browser สำเร็จ SafeT 01 ใช้ตำแหน่งเครื่องนี้ และ SafeT 02 เป็นตำแหน่งจำลองใกล้เคียง";
+          render();
+          showToast("อัปเดตตำแหน่งจาก Browser แล้ว");
+        },
+        (error) => {
+          state.isLocating = false;
+          state.geoMessage = geolocationErrorText(error);
+          render();
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    function applyBrowserLocation(position) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+      const updatedAt = new Date().toISOString();
+      const safeT01 = deviceById("device_01");
+      const safeT02 = deviceById("device_02");
+
+      safeT01.latitude = lat;
+      safeT01.longitude = lng;
+      safeT01.accuracyMeters = accuracy;
+      safeT01.locationSource = "Mac / Browser Geolocation";
+      safeT01.locationUpdatedAt = updatedAt;
+      safeT01.lastUpdateSeconds = 0;
+
+      safeT02.latitude = lat + 0.001;
+      safeT02.longitude = lng + 0.001;
+      safeT02.accuracyMeters = Math.max(accuracy || 50, 50);
+      safeT02.locationSource = "Simulated Location near SafeT 01";
+      safeT02.locationUpdatedAt = updatedAt;
+      safeT02.lastUpdateSeconds = 0;
+    }
+
+    function geolocationErrorText(error) {
+      if (location.protocol === "file:") {
+        return "Browser อาจไม่อนุญาตให้ใช้ตำแหน่งเมื่อเปิดแบบ file:// หากต้องการตำแหน่งจริง ให้เปิดผ่าน localhost หรือ HTTPS";
+      }
+      if (error.code === error.PERMISSION_DENIED) {
+        return "ยังไม่ได้รับอนุญาตให้เข้าถึงตำแหน่ง ระบบจึงแสดงตำแหน่ง demo ต่อไป";
+      }
+      if (error.code === error.TIMEOUT) {
+        return "การอ่านตำแหน่งใช้เวลานานเกินไป ระบบจึงคงตำแหน่ง demo ไว้ก่อน";
+      }
+      return "ไม่สามารถอ่านตำแหน่งจาก Browser ได้ในขณะนี้ ระบบจึงแสดงตำแหน่ง demo ต่อไป";
+    }
+
+    function toggleSOS() {
+      const safeT01 = deviceById("device_01");
+      safeT01.sosActive = !safeT01.sosActive;
+      safeT01.fallDetected = safeT01.sosActive;
+      if (safeT01.sosActive) {
+        state.alerts.unshift({
+          time: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
+          deviceId: safeT01.id,
+          userName: safeT01.userName,
+          deviceName: safeT01.deviceName,
+          event: "จำลองสถานะ SOS จากหน้าแผนที่",
+          level: "ฉุกเฉิน"
+        });
+        state.alerts = state.alerts.slice(0, 12);
+      }
+      render();
+      showToast(safeT01.sosActive ? "เปิดสถานะ SOS จำลองแล้ว" : "ปิดสถานะ SOS จำลองแล้ว");
+    }
+
+    function updateAlertsForSimulation(changedDevice) {
+      const status = evaluateStatus(changedDevice);
+      const now = new Date();
+      const time = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      let event = "ข้อมูลอุปกรณ์อัปเดตแล้ว";
+      if (status === "ฉุกเฉิน") event = changedDevice.fallDetected ? "ตรวจพบการล้มรุนแรง" : "พบสิ่งกีดขวางใกล้ตัว";
+      if (status === "เฝ้าระวัง") event = changedDevice.batteryPercent < state.settings[changedDevice.id].batteryThreshold ? "แบตเตอรี่ต่ำ" : "พบสิ่งกีดขวางด้านหน้า";
+      if (status === "ออฟไลน์") event = "อุปกรณ์ออฟไลน์";
+      state.alerts.unshift({
+        time,
+        deviceId: changedDevice.id,
+        userName: changedDevice.userName,
+        deviceName: changedDevice.deviceName,
+        event,
+        level: status === "ปลอดภัย" ? "ปกติ" : status
+      });
+      state.alerts = state.alerts.slice(0, 12);
+    }
+
+    function simulateRefresh() {
+      const device = state.devices[1];
+      const obstacleCycle = ["warning", "clear", "danger", "warning"];
+      const nextObstacle = obstacleCycle[(obstacleCycle.indexOf(device.obstacleStatus) + 1) % obstacleCycle.length];
+      device.obstacleStatus = nextObstacle;
+      device.obstacleDistanceCm = nextObstacle === "danger" ? 22 : nextObstacle === "warning" ? 45 : 120;
+      device.batteryPercent = Math.max(12, device.batteryPercent - 3);
+      device.lastUpdateSeconds = Math.floor(Math.random() * 9) + 3;
+      device.stoppedDurationMin = nextObstacle === "clear" ? 4 : device.stoppedDurationMin + 2;
+      updateAlertsForSimulation(device);
+      render();
+      showToast("อัปเดตข้อมูลจำลองแล้ว");
+    }
+
+    document.addEventListener("click", (event) => {
+      const pageButton = event.target.closest("[data-page-target]");
+      if (pageButton) {
+        showPage(pageButton.dataset.pageTarget);
+        return;
+      }
+
+      const openDetail = event.target.closest("[data-open-detail]");
+      if (openDetail) {
+        state.selectedDeviceId = openDetail.dataset.openDetail;
+        renderDetailTabs();
+        renderDetail();
+        showPage("detail");
+        return;
+      }
+
+      const focusAlerts = event.target.closest("[data-focus-alerts]");
+      if (focusAlerts) {
+        state.alertFilter = focusAlerts.dataset.focusAlerts;
+        renderAlertTable();
+        showPage("alerts");
+        return;
+      }
+
+      const detailTab = event.target.closest("[data-select-detail]");
+      if (detailTab) {
+        state.selectedDeviceId = detailTab.dataset.selectDetail;
+        renderDetailTabs();
+        renderDetail();
+        return;
+      }
+
+      const settingsTab = event.target.closest("[data-select-settings]");
+      if (settingsTab) {
+        state.settingsDeviceId = settingsTab.dataset.selectSettings;
+        renderSettingsTabs();
+        renderSettings();
+        return;
+      }
+
+      const filterButton = event.target.closest("[data-filter]");
+      if (filterButton) {
+        state.alertFilter = filterButton.dataset.filter;
+        renderAlertTable();
+        return;
+      }
+
+      if (event.target.closest("[data-refresh]")) {
+        simulateRefresh();
+        return;
+      }
+
+      if (event.target.closest("[data-update-location]")) {
+        requestCurrentLocation();
+        return;
+      }
+
+      if (event.target.closest("[data-toggle-sos]")) {
+        toggleSOS();
+        return;
+      }
+
+      if (event.target.closest("[data-save-settings]")) {
+        saveSettings();
+        render();
+        showToast("บันทึกการตั้งค่าแล้ว");
+        return;
+      }
+
+      if (event.target.closest("[data-reset-settings]")) {
+        state.settings = JSON.parse(JSON.stringify(defaultSettings));
+        saveSettings();
+        render();
+        showToast("รีเซ็ตค่าเริ่มต้นแล้ว");
+        return;
+      }
+
+      if (event.target.closest("[data-preview-dashboard]")) {
+        saveSettings();
+        render();
+        showPage("dashboard");
+        showToast("แสดง Dashboard ตามค่าที่เลือกแล้ว");
+      }
+    });
+
+    document.addEventListener("input", (event) => {
+      const check = event.target.closest("[data-setting-check]");
+      if (check) {
+        state.settings[state.settingsDeviceId][check.dataset.settingCheck] = check.checked;
+        render();
+        return;
+      }
+
+      const range = event.target.closest("[data-setting-range]");
+      if (range) {
+        state.settings[state.settingsDeviceId][range.dataset.settingRange] = Number(range.value);
+        render();
+        return;
+      }
+
+      const field = event.target.closest("[data-device-field]");
+      if (field) {
+        deviceById(state.settingsDeviceId)[field.dataset.deviceField] = field.value.trim() || field.value;
+        state.alerts.forEach((alert) => {
+          if (alert.deviceId === state.settingsDeviceId) {
+            const device = deviceById(state.settingsDeviceId);
+            alert.userName = device.userName;
+            alert.deviceName = device.deviceName;
+          }
+        });
+      }
+    });
+
+    render();
+    setTimeout(requestCurrentLocation, 500);
+  </script>
+</body>
+</html>
