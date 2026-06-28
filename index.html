@@ -7,22 +7,39 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" referrerpolicy="no-referrer">
   <style>
     :root {
-      --bg: #f5f7f4;
-      --panel: #ffffff;
-      --ink: #17211c;
-      --muted: #65726c;
-      --line: #dbe3de;
-      --green: #187a4d;
-      --green-soft: #e6f5ed;
-      --amber: #b26300;
-      --amber-soft: #fff2d8;
-      --red: #c02d2d;
-      --red-soft: #ffe5e5;
-      --gray: #626a66;
-      --gray-soft: #eef1ef;
-      --blue: #235f8f;
-      --blue-soft: #e5f2fb;
-      --shadow: 0 16px 40px rgba(24, 43, 34, 0.08);
+      --primary: #14b8a6;
+      --primary-dark: #0f766e;
+      --secondary: #38bdf8;
+      --secondary-dark: #0284c7;
+      --accent: #facc15;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #fb7185;
+      --bg: #f0f9ff;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #dceef7;
+      --panel: var(--card);
+      --ink: var(--text);
+      --line: var(--border);
+      --green: var(--success);
+      --green-soft: #dcfce7;
+      --amber: var(--warning);
+      --amber-soft: #fef3c7;
+      --red: var(--danger);
+      --red-soft: #ffe4e6;
+      --gray: #64748b;
+      --gray-soft: #e2e8f0;
+      --blue: var(--secondary-dark);
+      --blue-soft: #e0f2fe;
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 20px;
+      --radius-pill: 999px;
+      --shadow-soft: 0 10px 25px rgba(15, 118, 110, 0.08);
+      --shadow-card: 0 8px 20px rgba(15, 23, 42, 0.06);
+      --shadow: var(--shadow-soft);
       color-scheme: light;
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -36,7 +53,7 @@
       min-height: 100vh;
       overflow-x: hidden;
       background:
-        linear-gradient(180deg, rgba(229, 242, 235, 0.82), rgba(245, 247, 244, 0) 360px),
+        linear-gradient(180deg, rgba(240, 249, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 430px, #ffffff 100%),
         var(--bg);
       color: var(--ink);
     }
@@ -59,8 +76,9 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(245, 247, 244, 0.88);
-      border-bottom: 1px solid rgba(219, 227, 222, 0.9);
+      background: linear-gradient(135deg, rgba(20, 184, 166, 0.97), rgba(56, 189, 248, 0.97));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.32);
+      box-shadow: 0 14px 34px rgba(15, 118, 110, 0.16);
       backdrop-filter: blur(18px);
     }
 
@@ -82,26 +100,44 @@
     }
 
     .brand-mark {
+      position: relative;
       display: grid;
       place-items: center;
       width: 42px;
       height: 42px;
-      border-radius: 8px;
-      background: #173d31;
+      border: 2px solid rgba(255, 255, 255, 0.72);
+      border-radius: 15px 15px 20px 20px;
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.98), rgba(56, 189, 248, 0.98));
       color: #fff;
       font-weight: 800;
       letter-spacing: 0;
+      box-shadow: 0 10px 22px rgba(15, 118, 110, 0.24);
+      clip-path: polygon(50% 0, 90% 16%, 84% 74%, 50% 100%, 16% 74%, 10% 16%);
+    }
+
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      right: 3px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border: 2px solid #fff;
+      border-radius: var(--radius-pill);
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.22);
     }
 
     .brand h1 {
       margin: 0;
       font-size: clamp(1.1rem, 2vw, 1.45rem);
       line-height: 1.15;
+      color: #fff;
     }
 
     .brand p {
       margin: 3px 0 0;
-      color: var(--muted);
+      color: rgba(255, 255, 255, 0.86);
       font-size: 0.88rem;
       line-height: 1.35;
     }
@@ -111,27 +147,28 @@
       align-items: center;
       gap: 6px;
       padding: 5px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.18);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
     }
 
     .nav button,
     .segmented button {
       min-height: 36px;
       border: 0;
-      border-radius: 6px;
+      border-radius: var(--radius-pill);
       background: transparent;
-      color: var(--muted);
+      color: rgba(255, 255, 255, 0.88);
       padding: 8px 12px;
       white-space: nowrap;
     }
 
     .nav button.active,
     .segmented button.active {
-      background: #173d31;
+      background: rgba(255, 255, 255, 0.24);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(23, 61, 49, 0.16);
+      box-shadow: 0 8px 18px rgba(15, 118, 110, 0.16);
     }
 
     main {
@@ -162,7 +199,7 @@
 
     .eyebrow {
       margin: 0 0 5px;
-      color: var(--green);
+      color: var(--primary-dark);
       font-weight: 700;
       font-size: 0.86rem;
     }
@@ -199,9 +236,35 @@
       min-height: 86px;
       padding: 16px;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       background: var(--panel);
       box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 6px;
+      background: var(--primary);
+    }
+
+    .stat-safe::before {
+      background: var(--success);
+    }
+
+    .stat-watch::before {
+      background: var(--warning);
+    }
+
+    .stat-danger::before {
+      background: var(--danger);
+    }
+
+    .stat-offline::before {
+      background: var(--gray);
     }
 
     .stat span {
@@ -229,9 +292,15 @@
     .table-wrap,
     .settings-panel {
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--radius-lg);
       background: rgba(255, 255, 255, 0.92);
       box-shadow: var(--shadow);
+    }
+
+    .card,
+    .settings-panel,
+    .table-wrap {
+      background: var(--card);
     }
 
     .band {
@@ -257,20 +326,20 @@
       position: relative;
       min-height: 310px;
       overflow: hidden;
-      border: 1px solid #cbd8d1;
-      border-radius: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       background:
-        linear-gradient(90deg, rgba(35, 95, 143, 0.08) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(35, 95, 143, 0.08) 1px, transparent 1px),
-        linear-gradient(135deg, transparent 0 48%, rgba(55, 118, 83, 0.18) 48% 53%, transparent 53%),
-        linear-gradient(30deg, transparent 0 44%, rgba(178, 99, 0, 0.16) 44% 49%, transparent 49%),
-        #edf4ee;
+        linear-gradient(90deg, rgba(56, 189, 248, 0.12) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(20, 184, 166, 0.1) 1px, transparent 1px),
+        linear-gradient(135deg, transparent 0 48%, rgba(20, 184, 166, 0.15) 48% 53%, transparent 53%),
+        linear-gradient(30deg, transparent 0 44%, rgba(250, 204, 21, 0.2) 44% 49%, transparent 49%),
+        #e0f2fe;
       background-size: 34px 34px, 34px 34px, 100% 100%, 100% 100%, auto;
     }
 
     .leaflet-map {
       min-height: 360px;
-      background: #eaf2ec;
+      background: #e0f2fe;
     }
 
     .leaflet-map::before,
@@ -326,8 +395,8 @@
 
     .location-card {
       border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfcfb;
+      border-radius: var(--radius-md);
+      background: #f8fdff;
       padding: 14px;
     }
 
@@ -478,12 +547,12 @@
       z-index: 3;
       max-width: 420px;
       padding: 10px 12px;
-      border: 1px solid rgba(23, 33, 28, 0.12);
-      border-radius: 8px;
+      border: 1px solid rgba(15, 118, 110, 0.14);
+      border-radius: var(--radius-md);
       background: rgba(255, 255, 255, 0.92);
       color: var(--muted);
       line-height: 1.45;
-      box-shadow: 0 10px 22px rgba(23, 33, 28, 0.1);
+      box-shadow: 0 10px 22px rgba(15, 118, 110, 0.1);
     }
 
     .fallback-map-note strong,
@@ -498,11 +567,11 @@
 
     .marker-label {
       padding: 9px 10px;
-      border: 1px solid rgba(23, 33, 28, 0.12);
-      border-radius: 8px;
+      border: 1px solid rgba(15, 118, 110, 0.14);
+      border-radius: var(--radius-md);
       background: rgba(255, 255, 255, 0.94);
       text-align: center;
-      box-shadow: 0 12px 24px rgba(23, 33, 28, 0.14);
+      box-shadow: 0 12px 24px rgba(15, 118, 110, 0.14);
     }
 
     .marker-label strong,
@@ -535,6 +604,35 @@
       padding: 18px;
     }
 
+    .device-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .device-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 6px;
+      background: var(--primary);
+    }
+
+    .device-card.device-safe::before {
+      background: var(--success);
+    }
+
+    .device-card.device-watch::before {
+      background: var(--warning);
+    }
+
+    .device-card.device-danger::before {
+      background: var(--danger);
+    }
+
+    .device-card.device-offline::before {
+      background: var(--gray);
+    }
+
     .card-head {
       display: flex;
       justify-content: space-between;
@@ -556,9 +654,9 @@
       flex: 0 0 auto;
       width: 44px;
       height: 44px;
-      border-radius: 8px;
-      background: var(--blue-soft);
-      color: var(--blue);
+      border-radius: 15px;
+      background: linear-gradient(135deg, rgba(20, 184, 166, 0.14), rgba(56, 189, 248, 0.18));
+      color: var(--primary-dark);
       font-weight: 800;
     }
 
@@ -574,11 +672,13 @@
       align-items: center;
       gap: 7px;
       min-height: 32px;
-      border-radius: 999px;
+      border-radius: var(--radius-pill);
       padding: 6px 10px;
       font-size: 0.86rem;
       font-weight: 700;
       white-space: nowrap;
+      border: 1px solid currentColor;
+      border-color: color-mix(in srgb, currentColor 22%, transparent);
     }
 
     .dot {
@@ -589,22 +689,22 @@
     }
 
     .safe {
-      color: var(--green);
+      color: #166534;
       background: var(--green-soft);
     }
 
     .watch {
-      color: var(--amber);
+      color: #92400e;
       background: var(--amber-soft);
     }
 
     .danger {
-      color: var(--red);
+      color: #be123c;
       background: var(--red-soft);
     }
 
     .offline {
-      color: var(--gray);
+      color: #475569;
       background: var(--gray-soft);
     }
 
@@ -659,15 +759,15 @@
     }
 
     .icon-normal {
-      color: var(--green);
+      color: var(--success);
     }
 
     .icon-alert {
-      color: var(--red);
+      color: var(--danger);
     }
 
     .icon-muted {
-      color: #9aa39e;
+      color: #94a3b8;
     }
 
     .metric dd {
@@ -689,24 +789,43 @@
       align-items: center;
       gap: 8px;
       min-height: 40px;
-      border: 1px solid #173d31;
-      border-radius: 8px;
-      background: #173d31;
+      border: 1px solid transparent;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
       color: #fff;
       padding: 9px 14px;
       font-weight: 700;
       text-decoration: none;
+      box-shadow: 0 8px 18px rgba(20, 184, 166, 0.25);
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, var(--primary-dark), var(--secondary-dark));
+      box-shadow: 0 12px 24px rgba(20, 184, 166, 0.28);
     }
 
     .btn.secondary {
-      border-color: var(--line);
+      border-color: rgba(20, 184, 166, 0.45);
       background: #fff;
-      color: var(--ink);
+      color: var(--primary-dark);
+      box-shadow: none;
+    }
+
+    .btn.secondary:hover {
+      background: #ecfeff;
+      box-shadow: 0 8px 18px rgba(20, 184, 166, 0.12);
     }
 
     .btn.warn {
       border-color: var(--amber);
       background: var(--amber);
+      color: #fff;
+    }
+
+    .btn.warn:hover {
+      background: #d97706;
     }
 
     .toast {
@@ -717,11 +836,11 @@
       max-width: min(360px, calc(100vw - 36px));
       transform: translateY(120px);
       opacity: 0;
-      border-radius: 8px;
-      background: #173d31;
+      border-radius: var(--radius-md);
+      background: var(--primary-dark);
       color: #fff;
       padding: 13px 15px;
-      box-shadow: 0 18px 44px rgba(23, 61, 49, 0.25);
+      box-shadow: 0 18px 44px rgba(15, 118, 110, 0.25);
       transition: 180ms ease;
     }
 
@@ -742,6 +861,32 @@
       align-items: center;
       padding: 12px 0;
       border-top: 1px solid var(--line);
+    }
+
+    .event.event-safe,
+    .event.event-watch,
+    .event.event-danger,
+    .event.event-offline {
+      border-left: 5px solid var(--primary);
+      border-radius: var(--radius-sm);
+      padding-left: 12px;
+      background: #ffffff;
+    }
+
+    .event.event-safe {
+      border-left-color: var(--success);
+    }
+
+    .event.event-watch {
+      border-left-color: var(--warning);
+    }
+
+    .event.event-danger {
+      border-left-color: var(--danger);
+    }
+
+    .event.event-offline {
+      border-left-color: var(--gray);
     }
 
     .event:first-child {
@@ -781,8 +926,8 @@
       min-height: 100px;
       padding: 14px;
       border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfcfb;
+      border-radius: var(--radius-md);
+      background: #f8fdff;
     }
 
     .sensor span {
@@ -824,10 +969,38 @@
     }
 
     th {
-      background: #f7faf8;
+      background: #f0f9ff;
       color: var(--muted);
       font-size: 0.88rem;
       font-weight: 800;
+    }
+
+    tbody tr {
+      background: #fff;
+    }
+
+    tbody tr:hover {
+      background: #f8fdff;
+    }
+
+    .alert-row td:first-child {
+      border-left: 5px solid var(--primary);
+    }
+
+    .alert-row.alert-safe td:first-child {
+      border-left-color: var(--success);
+    }
+
+    .alert-row.alert-watch td:first-child {
+      border-left-color: var(--warning);
+    }
+
+    .alert-row.alert-danger td:first-child {
+      border-left-color: var(--danger);
+    }
+
+    .alert-row.alert-offline td:first-child {
+      border-left-color: var(--gray);
     }
 
     tr:last-child td {
@@ -839,8 +1012,19 @@
       gap: 5px;
       padding: 5px;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--radius-pill);
       background: #fff;
+    }
+
+    .segmented button {
+      border-radius: var(--radius-pill);
+      color: var(--muted);
+    }
+
+    .segmented button.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(20, 184, 166, 0.2);
     }
 
     .settings-grid {
@@ -889,12 +1073,12 @@
     input[type="checkbox"] {
       width: 18px;
       height: 18px;
-      accent-color: #173d31;
+      accent-color: var(--primary);
     }
 
     input[type="range"] {
       width: 100%;
-      accent-color: #173d31;
+      accent-color: var(--primary);
     }
 
     input[type="number"],
@@ -902,11 +1086,19 @@
     select {
       width: 100%;
       min-height: 42px;
-      border: 1px solid #cbd8d1;
-      border-radius: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
       background: #fff;
       color: var(--ink);
       padding: 8px 10px;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.14);
+      outline: 0;
     }
 
     .range-head {
@@ -1064,7 +1256,6 @@
             <h2 id="dashboard-title">Safe T: ภาพรวมความปลอดภัย</h2>
             <p class="subtext">ดูสถานะล่าสุดของ SafeT 01 และ SafeT 02</p>
           </div>
-          <button class="btn secondary" type="button" data-refresh>จำลองอัปเดตข้อมูล</button>
         </div>
 
         <div class="status-strip" id="status-summary"></div>
@@ -1217,6 +1408,7 @@
             <div class="actions">
               <button class="btn" type="button" data-save-settings>บันทึกการตั้งค่า</button>
               <button class="btn secondary" type="button" data-reset-settings>รีเซ็ตค่าเริ่มต้น</button>
+              <button class="btn secondary" type="button" data-refresh>จำลองอัปเดตข้อมูล</button>
               <button class="btn warn" type="button" data-preview-dashboard>ดูตัวอย่าง Dashboard</button>
             </div>
           </section>
@@ -1611,7 +1803,7 @@
         ["ออฟไลน์", counts["ออฟไลน์"]]
       ];
       document.querySelector("#status-summary").innerHTML = items.map(([label, count]) => `
-        <div class="stat">
+        <div class="stat stat-${statusClass(label)}">
           <span>${label}</span>
           <strong>${count}</strong>
         </div>
@@ -1787,8 +1979,8 @@
       } else {
         mapRuntime.detailAccuracyCircle = L.circle(latLng, {
           radius: device.accuracyMeters || 50,
-          color: "#235f8f",
-          fillColor: "#235f8f",
+          color: "#38bdf8",
+          fillColor: "#38bdf8",
           fillOpacity: 0.12,
           weight: 2
         }).addTo(mapRuntime.detail);
@@ -1878,8 +2070,8 @@
         } else {
           mapRuntime.accuracyCircle = L.circle(latLng, {
             radius: safeT01.accuracyMeters || 50,
-            color: "#235f8f",
-            fillColor: "#235f8f",
+            color: "#38bdf8",
+            fillColor: "#38bdf8",
             fillOpacity: 0.12,
             weight: 2
           }).addTo(mapRuntime.dashboard);
@@ -1924,7 +2116,7 @@
       document.querySelector("#device-cards").innerHTML = state.devices.map((device) => {
         const status = evaluateStatus(device);
         return `
-          <article class="card">
+          <article class="card device-card device-${statusClass(status)}">
             <div class="card-head">
               <div class="person">
                 <div class="avatar">${escapeHtml(initials(device))}</div>
@@ -1967,7 +2159,7 @@
 
     function eventRow(alert) {
       return `
-        <div class="event">
+        <div class="event event-${statusClass(alert.level)}">
           <time>${alert.time}</time>
           <div>
             <strong>${escapeHtml(alert.event)}</strong>
@@ -1989,6 +2181,7 @@
     function renderDetail() {
       const device = deviceById(state.selectedDeviceId);
       const status = evaluateStatus(device);
+      document.querySelector("#detail-profile").className = `card device-card device-${statusClass(status)}`;
       document.querySelector("#detail-profile").innerHTML = `
         <div class="card-head">
           <div class="person">
@@ -2038,7 +2231,7 @@
         ? state.alerts
         : state.alerts.filter((alert) => alert.deviceId === state.alertFilter);
       document.querySelector("#alert-table").innerHTML = alerts.map((alert) => `
-        <tr>
+        <tr class="alert-row alert-${statusClass(alert.level)}">
           <td>${escapeHtml(alert.time)}</td>
           <td>${escapeHtml(alert.userName)}</td>
           <td>${escapeHtml(alert.deviceName)}</td>
