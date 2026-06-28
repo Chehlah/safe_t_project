@@ -407,7 +407,10 @@
       display: grid;
       gap: 7px;
       width: 166px;
-      transform: translate(-50%, -100%);
+      transform: translate(
+        calc(-50% + var(--marker-offset-x, 0px)),
+        calc(-100% + var(--marker-offset-y, 0px))
+      );
       z-index: 2;
     }
 
@@ -427,6 +430,70 @@
 
     .pin span {
       transform: rotate(45deg);
+    }
+
+    .pin.safe {
+      color: #fff;
+      background: var(--green);
+    }
+
+    .pin.watch {
+      color: #fff;
+      background: var(--amber);
+    }
+
+    .pin.danger {
+      color: #fff;
+      background: var(--red);
+    }
+
+    .pin.offline {
+      color: #fff;
+      background: var(--gray);
+    }
+
+    .leaflet-device-icon {
+      border: 0;
+      background: transparent;
+    }
+
+    .leaflet-pin-offset {
+      display: grid;
+      place-items: center;
+      width: 110px;
+      height: 42px;
+    }
+
+    .fallback-map {
+      position: relative;
+      min-height: inherit;
+      isolation: isolate;
+    }
+
+    .fallback-map-note {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      top: 14px;
+      z-index: 3;
+      max-width: 420px;
+      padding: 10px 12px;
+      border: 1px solid rgba(23, 33, 28, 0.12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--muted);
+      line-height: 1.45;
+      box-shadow: 0 10px 22px rgba(23, 33, 28, 0.1);
+    }
+
+    .fallback-map-note strong,
+    .fallback-map-note span {
+      display: block;
+    }
+
+    .fallback-map-note strong {
+      color: var(--ink);
+      margin-bottom: 4px;
     }
 
     .marker-label {
@@ -564,6 +631,45 @@
       color: var(--muted);
     }
 
+    .metric-label,
+    .sensor-label,
+    .btn-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .metric-icon,
+    .sensor-icon,
+    .btn-icon {
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .btn-icon {
+      width: 17px;
+      height: 17px;
+    }
+
+    .icon-normal {
+      color: var(--green);
+    }
+
+    .icon-alert {
+      color: var(--red);
+    }
+
+    .icon-muted {
+      color: #9aa39e;
+    }
+
     .metric dd {
       margin: 0;
       font-weight: 650;
@@ -680,7 +786,6 @@
     }
 
     .sensor span {
-      display: block;
       color: var(--muted);
       font-size: 0.86rem;
     }
@@ -956,7 +1061,7 @@
         <div class="page-head">
           <div>
             <p class="eyebrow">กำลังติดตาม 2 อุปกรณ์</p>
-            <h2 id="dashboard-title">ภาพรวมความปลอดภัย</h2>
+            <h2 id="dashboard-title">Safe T: ภาพรวมความปลอดภัย</h2>
             <p class="subtext">ดูสถานะล่าสุดของ SafeT 01 และ SafeT 02</p>
           </div>
           <button class="btn secondary" type="button" data-refresh>จำลองอัปเดตข้อมูล</button>
@@ -969,16 +1074,15 @@
             <div class="section-title">
               <div>
                 <h3>แผนที่รวม</h3>
-                <p>Demo Mode: อ่านตำแหน่งจาก Browser และแสดงบน OpenStreetMap</p>
+                <p>Demo Mode: แสดงตำแหน่งตัวอย่างบน OpenStreetMap</p>
               </div>
             </div>
             <div class="map leaflet-map" id="dashboard-map" aria-label="แผนที่ตำแหน่งอุปกรณ์ SafeT"></div>
             <div class="map-actions">
               <button class="btn secondary" type="button" data-update-location>อัปเดตตำแหน่ง</button>
-              <button class="btn warn" type="button" data-toggle-sos>จำลอง SOS</button>
             </div>
             <p class="map-note" id="geo-note">
-              ตำแหน่งที่แสดงเป็นตำแหน่งจากเครื่องที่เปิดเว็บอยู่ ใช้สำหรับจำลองการทำงานของ SafeT Dashboard
+              ตำแหน่งที่แสดงเริ่มจากข้อมูล demo ของ SafeT Dashboard
             </p>
             <div class="map-legend" id="map-legend"></div>
           </section>
@@ -1176,6 +1280,7 @@
         showBattery: true,
         showLastUpdate: true,
         showHistory: true,
+        displayStatus: "ปลอดภัย",
         fallAlert: true,
         batteryThreshold: 25,
         offlineThresholdMin: 3,
@@ -1192,12 +1297,14 @@
         showBattery: true,
         showLastUpdate: true,
         showHistory: true,
+        displayStatus: "เฝ้าระวัง",
         fallAlert: true,
         batteryThreshold: 20,
         offlineThresholdMin: 5,
         stoppedThresholdMin: 15,
         obstacleThresholdCm: 50,
-        gpsNoUpdateThresholdMin: 2
+        gpsNoUpdateThresholdMin: 2,
+        locationMode: "browser"
       }
     };
 
@@ -1217,8 +1324,9 @@
       selectedDeviceId: "device_01",
       settingsDeviceId: "device_01",
       alertFilter: "all",
-      geoMessage: "ระบบพร้อมอ่านตำแหน่งจาก Browser กดอนุญาตเมื่อมีการขอสิทธิ์",
+      geoMessage: "กำลังแสดงตำแหน่งจากอุปกรณ์ กดอัปเดตตำแหน่งเมื่อต้องการอ่านตำแหน่งปัจจุบัน",
       geoUpdatedAt: null,
+      browserLocation: null,
       isLocating: false
     };
 
@@ -1235,10 +1343,21 @@
     function loadSettings() {
       try {
         const stored = localStorage.getItem("safeTSettings");
-        return stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(defaultSettings));
+        return stored ? mergeSettings(JSON.parse(stored)) : JSON.parse(JSON.stringify(defaultSettings));
       } catch {
         return JSON.parse(JSON.stringify(defaultSettings));
       }
+    }
+
+    function mergeSettings(storedSettings) {
+      const merged = JSON.parse(JSON.stringify(defaultSettings));
+      Object.entries(storedSettings || {}).forEach(([deviceId, deviceSettings]) => {
+        merged[deviceId] = {
+          ...(merged[deviceId] || {}),
+          ...(deviceSettings || {})
+        };
+      });
+      return merged;
     }
 
     function saveSettings() {
@@ -1256,6 +1375,9 @@
 
     function evaluateStatus(device) {
       const settings = state.settings[device.id];
+      if (["ปลอดภัย", "เฝ้าระวัง", "ฉุกเฉิน"].includes(settings.displayStatus)) {
+        return settings.displayStatus;
+      }
       if (settings.fallAlert && device.fallDetected) return "ฉุกเฉิน";
       if (device.obstacleStatus === "danger" || device.obstacleDistanceCm < settings.obstacleThresholdCm * 0.55) return "ฉุกเฉิน";
       if (device.networkStatus === "offline") return "ออฟไลน์";
@@ -1277,6 +1399,14 @@
 
     function statusBadge(status) {
       return `<span class="badge ${statusClass(status)}"><span class="dot"></span>${escapeHtml(status)}</span>`;
+    }
+
+    function locationStatus(device) {
+      return device.sosActive ? "SOS" : evaluateStatus(device);
+    }
+
+    function locationStatusBadge(status) {
+      return statusBadge(status === "SOS" ? "ฉุกเฉิน" : status);
     }
 
     function deviceById(id) {
@@ -1318,8 +1448,123 @@
       return `${device.batteryPercent}%`;
     }
 
-    function locationText(device) {
-      return `${device.latitude.toFixed(4)}, ${device.longitude.toFixed(4)}`;
+    const iconPaths = {
+      mapPin: `
+        <path d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0Z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      `,
+      activity: `<path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>`,
+      shieldCheck: `
+        <path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1Z"></path>
+        <path d="m9 12 2 2 4-4"></path>
+      `,
+      alertTriangle: `
+        <path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"></path>
+        <path d="M12 9v4"></path>
+        <path d="M12 17h.01"></path>
+      `,
+      radar: `
+        <path d="M19.1 4.9A10 10 0 0 1 12 22"></path>
+        <path d="M4.9 4.9A10 10 0 0 0 12 22"></path>
+        <path d="M7.8 7.8A6 6 0 0 0 12 18"></path>
+        <path d="M16.2 7.8A6 6 0 0 1 12 18"></path>
+        <path d="M12 12h.01"></path>
+      `,
+      wifi: `
+        <path d="M12 20h.01"></path>
+        <path d="M2 8.8a15 15 0 0 1 20 0"></path>
+        <path d="M5 12a10 10 0 0 1 14 0"></path>
+        <path d="M8.5 15.5a5 5 0 0 1 7 0"></path>
+      `,
+      battery: `
+        <rect width="16" height="10" x="2" y="7" rx="2" ry="2"></rect>
+        <path d="M22 11v2"></path>
+        <path d="M6 11h4"></path>
+      `,
+      clock: `
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 6v6l4 2"></path>
+      `,
+      search: `
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.3-4.3"></path>
+      `,
+      bell: `
+        <path d="M10.3 21a2 2 0 0 0 3.4 0"></path>
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+      `
+    };
+
+    const metricIcons = {
+      gps: "mapPin",
+      motion: "activity",
+      fall: "shieldCheck",
+      obstacle: "radar",
+      network: "wifi",
+      battery: "battery",
+      lastUpdate: "clock"
+    };
+
+    function iconSvg(name, className = "metric-icon", extraClass = "") {
+      const paths = iconPaths[name] || iconPaths.activity;
+      const classes = [className, extraClass].filter(Boolean).join(" ");
+      return `<svg class="${classes}" viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`;
+    }
+
+    function updateAgeSeconds(device) {
+      if (device.locationUpdatedAt) {
+        const updatedAt = new Date(device.locationUpdatedAt).getTime();
+        if (Number.isFinite(updatedAt)) return Math.max(0, Math.round((Date.now() - updatedAt) / 1000));
+      }
+      return Number.isFinite(device.lastUpdateSeconds) ? device.lastUpdateSeconds : null;
+    }
+
+    function isUpdateStale(device) {
+      const age = updateAgeSeconds(device);
+      const threshold = (state.settings[device.id]?.gpsNoUpdateThresholdMin || 2) * 60;
+      return age !== null && age > threshold;
+    }
+
+    function metricTone(device, key) {
+      const settings = state.settings[device.id] || {};
+      if (key === "gps") {
+        const hasLocation = Number.isFinite(device.latitude) && Number.isFinite(device.longitude);
+        if (!hasLocation) return "muted";
+        return isUpdateStale(device) ? "alert" : "normal";
+      }
+      if (key === "motion") {
+        if (!device.motionStatus) return "muted";
+        return device.motionStatus === "stopped" && device.stoppedDurationMin > settings.stoppedThresholdMin ? "alert" : "normal";
+      }
+      if (key === "fall") return device.fallDetected ? "alert" : "normal";
+      if (key === "obstacle") {
+        if (!device.obstacleStatus) return "muted";
+        return device.obstacleStatus !== "clear" || device.obstacleDistanceCm <= settings.obstacleThresholdCm ? "alert" : "normal";
+      }
+      if (key === "network") {
+        if (!device.networkStatus) return "muted";
+        return device.networkStatus === "offline" ? "alert" : "normal";
+      }
+      if (key === "battery") {
+        if (!Number.isFinite(device.batteryPercent)) return "muted";
+        return device.batteryPercent < settings.batteryThreshold ? "alert" : "normal";
+      }
+      if (key === "lastUpdate") return updateAgeSeconds(device) === null ? "muted" : (isUpdateStale(device) ? "alert" : "normal");
+      return "muted";
+    }
+
+    function toneClass(tone) {
+      return {
+        normal: "icon-normal",
+        alert: "icon-alert",
+        muted: "icon-muted"
+      }[tone] || "icon-muted";
+    }
+
+    function metricLabelHtml(device, key, label, className = "metric-label") {
+      const tone = metricTone(device, key);
+      const iconName = key === "fall" && tone === "alert" ? "alertTriangle" : metricIcons[key];
+      return `<span class="${className}">${iconSvg(iconName, className === "sensor-label" ? "sensor-icon" : "metric-icon", toneClass(tone))}<span>${escapeHtml(label)}</span></span>`;
     }
 
     function preciseLocationText(device) {
@@ -1373,26 +1618,88 @@
       `).join("");
     }
 
-    function markerPosition(device) {
-      const positions = {
-        device_01: { left: "42%", top: "58%" },
-        device_02: { left: "65%", top: "44%" }
-      };
-      return positions[device.id] || { left: "50%", top: "50%" };
+    function deviceMapLabel(device) {
+      return device.deviceName.replace("SafeT ", "");
     }
 
-    function mapMarker(device) {
-      const pos = markerPosition(device);
+    function markerPosition(device, devices = state.devices) {
+      if (devices.length <= 1) return { left: "50%", top: "54%" };
+
+      const latitudes = devices.map((item) => item.latitude);
+      const longitudes = devices.map((item) => item.longitude);
+      let minLat = Math.min(...latitudes);
+      let maxLat = Math.max(...latitudes);
+      let minLng = Math.min(...longitudes);
+      let maxLng = Math.max(...longitudes);
+
+      if (minLat === maxLat) {
+        minLat -= 0.0005;
+        maxLat += 0.0005;
+      }
+      if (minLng === maxLng) {
+        minLng -= 0.0005;
+        maxLng += 0.0005;
+      }
+
+      const padding = 18;
+      const usable = 100 - (padding * 2);
+      const lngRatio = (device.longitude - minLng) / (maxLng - minLng);
+      const latRatio = (device.latitude - minLat) / (maxLat - minLat);
+      const left = padding + (lngRatio * usable);
+      const top = padding + ((1 - latRatio) * usable);
+
+      return { left: `${left.toFixed(1)}%`, top: `${top.toFixed(1)}%` };
+    }
+
+    function markerCoordinateKey(device) {
+      return `${device.latitude.toFixed(6)},${device.longitude.toFixed(6)}`;
+    }
+
+    function markerVisualOffset(device, devices = state.devices) {
+      const colocatedDevices = devices.filter((item) => markerCoordinateKey(item) === markerCoordinateKey(device));
+      if (colocatedDevices.length <= 1) return { x: 0, y: 0 };
+
+      const offsets = [
+        { x: -28, y: 0 },
+        { x: 28, y: 0 },
+        { x: 0, y: -30 },
+        { x: 0, y: 30 },
+        { x: -28, y: -30 },
+        { x: 28, y: -30 }
+      ];
+      const index = colocatedDevices.findIndex((item) => item.id === device.id);
+      return offsets[index] || { x: 0, y: 0 };
+    }
+
+    function mapMarker(device, devices = state.devices) {
+      const pos = markerPosition(device, devices);
+      const offset = markerVisualOffset(device, devices);
       const status = evaluateStatus(device);
       return `
-        <div class="marker" style="left:${pos.left}; top:${pos.top};">
-          <div class="pin ${statusClass(status)}"><span>${device.deviceName.replace("SafeT ", "")}</span></div>
+        <div class="marker" style="left:${pos.left}; top:${pos.top}; --marker-offset-x:${offset.x}px; --marker-offset-y:${offset.y}px;">
+          <div class="pin ${statusClass(status)}"><span>${escapeHtml(deviceMapLabel(device))}</span></div>
           <div class="marker-label">
             <strong>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</strong>
-            <span>ตำแหน่งล่าสุด ${lastUpdate(device)}</span>
+            <span>${escapeHtml(preciseLocationText(device))}</span>
           </div>
         </div>
       `;
+    }
+
+    function leafletMarkerIcon(device, devices = state.devices) {
+      const status = evaluateStatus(device);
+      const offset = markerVisualOffset(device, devices);
+      return L.divIcon({
+        className: "leaflet-device-icon",
+        html: `
+          <div class="leaflet-pin-offset" style="transform: translate(${offset.x}px, ${offset.y}px);">
+            <div class="pin ${statusClass(status)}"><span>${escapeHtml(deviceMapLabel(device))}</span></div>
+          </div>
+        `,
+        iconSize: [110, 42],
+        iconAnchor: [55, 42],
+        popupAnchor: [offset.x, -42 + offset.y]
+      });
     }
 
     function renderDashboardMap() {
@@ -1407,6 +1714,7 @@
       if (!mapElement) return;
 
       if (!mapRuntime.dashboard) {
+        mapElement.innerHTML = "";
         mapRuntime.dashboard = L.map(mapElement, {
           zoomControl: true,
           scrollWheelZoom: true
@@ -1421,16 +1729,17 @@
       updateLeafletMarkers();
     }
 
-    function renderMapFallback(title, message, selector = "#dashboard-map") {
+    function renderMapFallback(title, message, selector = "#dashboard-map", devices = state.devices) {
       const mapElement = document.querySelector(selector);
       const existingMap = selector === "#detail-map" ? mapRuntime.detail : mapRuntime.dashboard;
       if (!mapElement || existingMap) return;
       mapElement.innerHTML = `
-        <div class="map-empty">
-          <div>
+        <div class="fallback-map">
+          <div class="fallback-map-note">
             <strong>${escapeHtml(title)}</strong>
             <span>${escapeHtml(message)}</span>
           </div>
+          ${devices.map((device) => mapMarker(device, devices)).join("")}
         </div>
       `;
     }
@@ -1442,7 +1751,8 @@
         renderMapFallback(
           "กำลังรอ Leaflet.js",
           "หากเปิดแบบออฟไลน์หรือ CDN โหลดไม่ได้ ระบบจะแสดงข้อมูลตำแหน่งด้านล่างแทน",
-          "#detail-map"
+          "#detail-map",
+          [device]
         );
         return;
       }
@@ -1465,8 +1775,9 @@
 
       if (mapRuntime.detailMarker) {
         mapRuntime.detailMarker.setLatLng(latLng);
+        mapRuntime.detailMarker.setIcon(leafletMarkerIcon(device, [device]));
       } else {
-        mapRuntime.detailMarker = L.marker(latLng).addTo(mapRuntime.detail);
+        mapRuntime.detailMarker = L.marker(latLng, { icon: leafletMarkerIcon(device, [device]) }).addTo(mapRuntime.detail);
       }
       mapRuntime.detailMarker.bindPopup(devicePopupHtml(device)).openPopup();
 
@@ -1488,7 +1799,7 @@
     }
 
     function renderDetailMapMeta(device) {
-      const status = device.sosActive ? "SOS" : (device.id === "device_02" ? "Demo" : "Online");
+      const status = locationStatus(device);
       document.querySelector("#detail-map-meta").innerHTML = `
         <div class="location-grid">
           <article class="location-card">
@@ -1497,7 +1808,7 @@
                 <h4>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</h4>
                 <p>${escapeHtml(device.locationSource || "Demo")}</p>
               </div>
-              ${statusBadge(status === "SOS" ? "ฉุกเฉิน" : (status === "Online" ? "ปกติ" : "เฝ้าระวัง"))}
+              ${locationStatusBadge(status)}
             </div>
             <dl class="mini-list">
               <div><dt>สถานะ</dt><dd>${escapeHtml(status)}</dd></div>
@@ -1516,7 +1827,7 @@
       document.querySelector("#map-legend").innerHTML = `
         <div class="location-grid">
           ${state.devices.map((device) => {
-            const status = device.sosActive ? "SOS" : (device.id === "device_02" ? "Demo" : "Online");
+            const status = locationStatus(device);
             return `
               <article class="location-card">
                 <div class="location-card-head">
@@ -1524,7 +1835,7 @@
                     <h4>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</h4>
                     <p>${escapeHtml(device.locationSource || "Demo")}</p>
                   </div>
-                  ${statusBadge(status === "SOS" ? "ฉุกเฉิน" : (status === "Online" ? "ปกติ" : "เฝ้าระวัง"))}
+                  ${locationStatusBadge(status)}
                 </div>
                 <dl class="mini-list">
                   <div><dt>สถานะ</dt><dd>${escapeHtml(status)}</dd></div>
@@ -1550,8 +1861,9 @@
 
         if (mapRuntime.markers[device.id]) {
           mapRuntime.markers[device.id].setLatLng(latLng);
+          mapRuntime.markers[device.id].setIcon(leafletMarkerIcon(device));
         } else {
-          mapRuntime.markers[device.id] = L.marker(latLng).addTo(mapRuntime.dashboard);
+          mapRuntime.markers[device.id] = L.marker(latLng, { icon: leafletMarkerIcon(device) }).addTo(mapRuntime.dashboard);
         }
 
         mapRuntime.markers[device.id].bindPopup(devicePopupHtml(device));
@@ -1584,7 +1896,7 @@
     }
 
     function devicePopupHtml(device) {
-      const status = device.sosActive ? "SOS" : (device.id === "device_02" ? "Demo" : "Online");
+      const status = locationStatus(device);
       return `
         <strong>${escapeHtml(device.deviceName)} - ${escapeHtml(device.userName)}</strong><br>
         สถานะ: ${escapeHtml(status)}<br>
@@ -1598,13 +1910,13 @@
     function visibleMetrics(device) {
       const settings = state.settings[device.id];
       const metrics = [];
-      if (settings.showGPS) metrics.push(["ตำแหน่งล่าสุด", locationText(device)]);
-      if (settings.showMotion) metrics.push(["การเคลื่อนไหว", motionText(device)]);
-      if (settings.showFall) metrics.push(["การล้มรุนแรง", fallText(device)]);
-      if (settings.showObstacle) metrics.push(["สิ่งกีดขวาง", obstacleText(device)]);
-      if (settings.showNetwork) metrics.push(["การเชื่อมต่อ", networkText(device)]);
-      if (settings.showBattery) metrics.push(["แบตเตอรี่", batteryText(device)]);
-      if (settings.showLastUpdate) metrics.push(["อัปเดตล่าสุด", lastUpdate(device)]);
+      if (settings.showGPS) metrics.push({ key: "gps", label: "ตำแหน่งล่าสุด", value: preciseLocationText(device) });
+      if (settings.showMotion) metrics.push({ key: "motion", label: "การเคลื่อนไหว", value: motionText(device) });
+      if (settings.showFall) metrics.push({ key: "fall", label: "การล้มรุนแรง", value: fallText(device) });
+      if (settings.showObstacle) metrics.push({ key: "obstacle", label: "สิ่งกีดขวาง", value: obstacleText(device) });
+      if (settings.showNetwork) metrics.push({ key: "network", label: "การเชื่อมต่อ", value: networkText(device) });
+      if (settings.showBattery) metrics.push({ key: "battery", label: "แบตเตอรี่", value: batteryText(device) });
+      if (settings.showLastUpdate) metrics.push({ key: "lastUpdate", label: "อัปเดตล่าสุด", value: lastUpdate(device) });
       return metrics;
     }
 
@@ -1624,16 +1936,20 @@
               ${statusBadge(status)}
             </div>
             <dl class="metric-list">
-              ${visibleMetrics(device).map(([label, value]) => `
+              ${visibleMetrics(device).map(({ key, label, value }) => `
                 <div class="metric">
-                  <dt>${label}</dt>
+                  <dt>${metricLabelHtml(device, key, label)}</dt>
                   <dd>${escapeHtml(value)}</dd>
                 </div>
               `).join("")}
             </dl>
             <div class="actions">
-              <button class="btn" type="button" data-open-detail="${device.id}">ดูรายละเอียด</button>
-              <button class="btn secondary" type="button" data-focus-alerts="${device.id}">ดูแจ้งเตือน</button>
+              <button class="btn" type="button" data-open-detail="${device.id}">
+                <span class="btn-label">${iconSvg("search", "btn-icon")}<span>ดูรายละเอียด</span></span>
+              </button>
+              <button class="btn secondary" type="button" data-focus-alerts="${device.id}">
+                <span class="btn-label">${iconSvg("bell", "btn-icon")}<span>ดูแจ้งเตือน</span></span>
+              </button>
             </div>
           </article>
         `;
@@ -1697,15 +2013,15 @@
       document.querySelector("#detail-location-note").textContent = `ตำแหน่งล่าสุดของ${device.userName} อัปเดตเมื่อ ${lastUpdate(device)}`;
       renderDetailMap(device);
       document.querySelector("#sensor-grid").innerHTML = [
-        ["การเคลื่อนไหว", motionText(device)],
-        ["การล้ม", fallText(device)],
-        ["สิ่งกีดขวาง", obstacleText(device)],
-        ["แบตเตอรี่", batteryText(device)],
-        ["อินเทอร์เน็ต", networkText(device)],
-        ["เวลาอัปเดตล่าสุด", lastUpdate(device)]
-      ].map(([label, value]) => `
+        { key: "motion", label: "การเคลื่อนไหว", value: motionText(device) },
+        { key: "fall", label: "การล้มรุนแรง", value: fallText(device) },
+        { key: "obstacle", label: "สิ่งกีดขวาง", value: obstacleText(device) },
+        { key: "battery", label: "แบตเตอรี่", value: batteryText(device) },
+        { key: "network", label: "การเชื่อมต่อ", value: networkText(device) },
+        { key: "lastUpdate", label: "อัปเดตล่าสุด", value: lastUpdate(device) }
+      ].map(({ key, label, value }) => `
         <div class="sensor">
-          <span>${label}</span>
+          ${metricLabelHtml(device, key, label, "sensor-label")}
           <strong>${escapeHtml(value)}</strong>
         </div>
       `).join("");
@@ -1769,8 +2085,32 @@
         ["obstacleThresholdCm", "แจ้งเตือนเมื่อพบสิ่งกีดขวางใกล้กว่า", "cm", 20, 150],
         ["gpsNoUpdateThresholdMin", "แจ้งเตือนเมื่อ GPS ไม่อัปเดตเกิน", "นาที", 1, 15]
       ];
+      const statusOptions = ["ปลอดภัย", "เฝ้าระวัง", "ฉุกเฉิน"];
+      const locationModeControl = state.settingsDeviceId === "device_02" ? `
+        <div class="field-row">
+          <label for="locationMode">โหมดตำแหน่ง SafeT 02</label>
+          <select id="locationMode" data-setting-select="locationMode">
+            <option value="browser" ${settings.locationMode === "browser" ? "selected" : ""}>ตำแหน่ง Browser โดยตรง</option>
+            <option value="nearby" ${settings.locationMode === "nearby" ? "selected" : ""}>ตำแหน่งใกล้ SafeT 01</option>
+          </select>
+        </div>
+      ` : "";
 
       document.querySelector("#alert-settings").innerHTML = `
+        <div class="field-row">
+          <label for="displayStatus">สถานะที่แสดงบน Dashboard</label>
+          <select id="displayStatus" data-status-select>
+            ${statusOptions.map((status) => `
+              <option value="${status}" ${settings.displayStatus === status ? "selected" : ""}>${status}</option>
+            `).join("")}
+          </select>
+        </div>
+        <div class="field-row">
+          <label>จำลอง SOS สำหรับ ${escapeHtml(device.deviceName)}</label>
+          <button class="btn warn" type="button" data-toggle-sos="${device.id}">
+            ${device.sosActive ? "ปิด SOS จำลอง" : "จำลอง SOS"}
+          </button>
+        </div>
         <div class="check-row">
           <label>
             <input type="checkbox" ${settings.fallAlert ? "checked" : ""} data-setting-check="fallAlert">
@@ -1802,6 +2142,7 @@
             `).join("")}
           </select>
         </div>
+        ${locationModeControl}
       `;
     }
 
@@ -1846,7 +2187,7 @@
         (position) => {
           applyBrowserLocation(position);
           state.isLocating = false;
-          state.geoMessage = "อ่านตำแหน่งจาก Browser สำเร็จ SafeT 01 ใช้ตำแหน่งเครื่องนี้ และ SafeT 02 เป็นตำแหน่งจำลองใกล้เคียง";
+          state.geoMessage = browserLocationSuccessMessage();
           render();
           showToast("อัปเดตตำแหน่งจาก Browser แล้ว");
         },
@@ -1868,22 +2209,45 @@
       const lng = position.coords.longitude;
       const accuracy = position.coords.accuracy;
       const updatedAt = new Date().toISOString();
+      state.geoUpdatedAt = updatedAt;
+      state.browserLocation = { lat, lng, accuracy, updatedAt };
+
+      applySafeT01BrowserLocation(state.browserLocation);
+      applySafeT02BrowserLocation(state.browserLocation);
+    }
+
+    function applySafeT01BrowserLocation(browserLocation) {
       const safeT01 = deviceById("device_01");
-      const safeT02 = deviceById("device_02");
 
-      safeT01.latitude = lat;
-      safeT01.longitude = lng;
-      safeT01.accuracyMeters = accuracy;
+      safeT01.latitude = browserLocation.lat;
+      safeT01.longitude = browserLocation.lng;
+      safeT01.accuracyMeters = browserLocation.accuracy;
       safeT01.locationSource = "Mac / Browser Geolocation";
-      safeT01.locationUpdatedAt = updatedAt;
+      safeT01.locationUpdatedAt = browserLocation.updatedAt;
       safeT01.lastUpdateSeconds = 0;
+    }
 
-      safeT02.latitude = lat + 0.001;
-      safeT02.longitude = lng + 0.001;
-      safeT02.accuracyMeters = Math.max(accuracy || 50, 50);
-      safeT02.locationSource = "Simulated Location near SafeT 01";
-      safeT02.locationUpdatedAt = updatedAt;
+    function applySafeT02BrowserLocation(browserLocation = state.browserLocation) {
+      if (!browserLocation) return;
+
+      const safeT02 = deviceById("device_02");
+      const useBrowserLocation = state.settings.device_02?.locationMode === "browser";
+
+      safeT02.latitude = useBrowserLocation ? browserLocation.lat : browserLocation.lat + 0.001;
+      safeT02.longitude = useBrowserLocation ? browserLocation.lng : browserLocation.lng + 0.001;
+      safeT02.accuracyMeters = useBrowserLocation ? browserLocation.accuracy : Math.max(browserLocation.accuracy || 50, 50);
+      safeT02.locationSource = useBrowserLocation
+        ? "Mac / Browser Geolocation"
+        : "Simulated Location near SafeT 01";
+      safeT02.locationUpdatedAt = browserLocation.updatedAt;
       safeT02.lastUpdateSeconds = 0;
+    }
+
+    function browserLocationSuccessMessage() {
+      const safeT02Mode = state.settings.device_02?.locationMode === "browser"
+        ? "ตำแหน่งจากอุปกรณ์ SafeT 02 สำเร็จ"
+        : "SafeT 02 เป็นตำแหน่งจำลองใกล้เคียง";
+      return `อ่านตำแหน่งจากอุปกรณ์ SafeT 01 สำเร็จ และ ${safeT02Mode}`;
     }
 
     function geolocationErrorText(error) {
@@ -1899,23 +2263,35 @@
       return "ไม่สามารถอ่านตำแหน่งจาก Browser ได้ในขณะนี้ ระบบจึงแสดงตำแหน่ง demo ต่อไป";
     }
 
-    function toggleSOS() {
-      const safeT01 = deviceById("device_01");
-      safeT01.sosActive = !safeT01.sosActive;
-      safeT01.fallDetected = safeT01.sosActive;
-      if (safeT01.sosActive) {
+    function setDeviceDisplayStatus(deviceId, status, options = {}) {
+      const device = deviceById(deviceId);
+      if (!device || !state.settings[deviceId]) return;
+
+      state.settings[deviceId].displayStatus = status;
+      device.sosActive = Boolean(options.sosActive);
+      device.fallDetected = Boolean(options.sosActive);
+    }
+
+    function toggleSOS(deviceId = state.settingsDeviceId) {
+      const device = deviceById(deviceId);
+      if (!device) return;
+
+      const isActivating = !device.sosActive;
+      setDeviceDisplayStatus(device.id, isActivating ? "ฉุกเฉิน" : "ปลอดภัย", { sosActive: isActivating });
+
+      if (isActivating) {
         state.alerts.unshift({
           time: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
-          deviceId: safeT01.id,
-          userName: safeT01.userName,
-          deviceName: safeT01.deviceName,
-          event: "จำลองสถานะ SOS จากหน้าแผนที่",
+          deviceId: device.id,
+          userName: device.userName,
+          deviceName: device.deviceName,
+          event: "จำลองสถานะ SOS จากหน้าตั้งค่า",
           level: "ฉุกเฉิน"
         });
         state.alerts = state.alerts.slice(0, 12);
       }
       render();
-      showToast(safeT01.sosActive ? "เปิดสถานะ SOS จำลองแล้ว" : "ปิดสถานะ SOS จำลองแล้ว");
+      showToast(isActivating ? `เปิดสถานะ SOS จำลองของ ${device.deviceName} แล้ว` : `ปิดสถานะ SOS จำลองของ ${device.deviceName} แล้ว`);
     }
 
     function updateAlertsForSimulation(changedDevice) {
@@ -2008,8 +2384,9 @@
         return;
       }
 
-      if (event.target.closest("[data-toggle-sos]")) {
-        toggleSOS();
+      const sosButton = event.target.closest("[data-toggle-sos]");
+      if (sosButton) {
+        toggleSOS(sosButton.dataset.toggleSos);
         return;
       }
 
@@ -2022,6 +2399,14 @@
 
       if (event.target.closest("[data-reset-settings]")) {
         state.settings = JSON.parse(JSON.stringify(defaultSettings));
+        state.devices.forEach((device) => {
+          device.sosActive = false;
+          device.fallDetected = false;
+        });
+        applySafeT02BrowserLocation();
+        state.geoMessage = state.browserLocation
+          ? browserLocationSuccessMessage()
+          : "กำลังแสดงตำแหน่ง demo จากข้อมูลตัวอย่าง กดอัปเดตตำแหน่งเมื่อต้องการอ่านตำแหน่งจาก Browser";
         saveSettings();
         render();
         showToast("รีเซ็ตค่าเริ่มต้นแล้ว");
@@ -2064,8 +2449,26 @@
       }
     });
 
+    document.addEventListener("change", (event) => {
+      const statusSelect = event.target.closest("[data-status-select]");
+      if (statusSelect) {
+        setDeviceDisplayStatus(state.settingsDeviceId, statusSelect.value);
+        render();
+        return;
+      }
+
+      const select = event.target.closest("[data-setting-select]");
+      if (!select) return;
+
+      state.settings[state.settingsDeviceId][select.dataset.settingSelect] = select.value;
+      applySafeT02BrowserLocation();
+      state.geoMessage = state.browserLocation
+        ? browserLocationSuccessMessage()
+        : "กำลังแสดงตำแหน่ง demo จากข้อมูลตัวอย่าง กดอัปเดตตำแหน่งเมื่อต้องการอ่านตำแหน่งจาก Browser";
+      render();
+    });
+
     render();
-    setTimeout(requestCurrentLocation, 500);
   </script>
 </body>
 </html>
